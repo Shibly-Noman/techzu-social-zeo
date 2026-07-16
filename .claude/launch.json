@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "expo-web",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "set PATH=C:\\nvm4w\\nodejs;%PATH%&& npx expo start --web --port 8081"
+      ],
+      "cwd": "${workspaceFolder}/mobile",
+      "port": 8081
+    }
+  ]
+}
