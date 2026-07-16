@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+.env.local
+*-service-account*.json
+firebase-service-account.json
+
+# Builds
+dist/
+build/
+*.apk
+*.aab
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+
+# Native (managed by Expo prebuild)
+mobile/android/
+mobile/ios/
+
+# Logs & OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
