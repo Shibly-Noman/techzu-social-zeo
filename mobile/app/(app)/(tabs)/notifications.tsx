@@ -31,6 +31,7 @@ function NotificationRow({
     <Pressable
       style={[styles.row, !item.read && styles.rowUnread]}
       onPress={onPress}
+      android_ripple={{ color: colors.ripple }}
       accessibilityRole="button"
     >
       <Avatar username={item.actor.username} size={42} />

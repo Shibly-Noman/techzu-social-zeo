@@ -25,6 +25,9 @@ export function Button({ title, onPress, loading, disabled, variant = 'primary',
       accessibilityRole="button"
       onPress={onPress}
       disabled={isDisabled}
+      android_ripple={{
+        color: variant === 'primary' ? colors.rippleOnPrimary : colors.ripple,
+      }}
       style={({ pressed }) => [
         styles.base,
         variant === 'primary' ? styles.primary : styles.ghost,
@@ -49,6 +52,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
+    overflow: 'hidden', // clips the Android ripple to the rounded corners
   },
   primary: {
     backgroundColor: colors.primary,

@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Redirect, Stack, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { useAuth } from '../../src/auth/AuthContext';
 import { LoadingView } from '../../src/components/StatusViews';
 import { postIdFromNotification, registerDeviceForPush } from '../../src/notifications/push';
@@ -18,7 +19,8 @@ export default function AppLayout() {
 
   // Tapping a push notification deep-links to the post it refers to.
   useEffect(() => {
-    if (status !== 'signedIn') return;
+    // expo-notifications doesn't implement these APIs on web.
+    if (Platform.OS === 'web' || status !== 'signedIn') return;
 
     // App launched from a notification (cold start).
     Notifications.getLastNotificationResponseAsync().then((response) => {

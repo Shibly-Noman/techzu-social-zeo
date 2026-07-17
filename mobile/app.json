@@ -11,6 +11,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.shibly.minisocialfeed"
     },
+    "androidStatusBar": {
+      "barStyle": "dark-content"
+    },
     "android": {
       "package": "com.shibly.minisocialfeed",
       "adaptiveIcon": {
@@ -32,6 +35,15 @@
         "expo-notifications",
         {
           "color": "#4F46E5"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#4F46E5"
         }
       ]
     ],

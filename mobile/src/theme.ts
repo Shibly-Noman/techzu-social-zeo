@@ -10,6 +10,10 @@ export const colors = {
   like: '#EF4444',
   danger: '#DC2626',
   white: '#FFFFFF',
+  /** android_ripple colors */
+  ripple: 'rgba(79, 70, 229, 0.12)',
+  rippleOnPrimary: 'rgba(255, 255, 255, 0.25)',
+  skeleton: '#E2E8F0',
 };
 
 export const spacing = {

@@ -19,7 +19,8 @@ import { useFeed, useToggleLike } from '../../../src/api/hooks';
 import { useAuth } from '../../../src/auth/AuthContext';
 import { PostCard } from '../../../src/components/PostCard';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
-import { EmptyState, ErrorView, LoadingView } from '../../../src/components/StatusViews';
+import { SkeletonFeed } from '../../../src/components/SkeletonPostCard';
+import { EmptyState, ErrorView } from '../../../src/components/StatusViews';
 import { colors, radius, spacing } from '../../../src/theme';
 
 export default function FeedScreen() {
@@ -62,6 +63,7 @@ export default function FeedScreen() {
             <Pressable
               onPress={confirmLogout}
               hitSlop={8}
+              android_ripple={{ color: colors.ripple, borderless: true, radius: 24 }}
               accessibilityRole="button"
               accessibilityLabel="Log out"
             >
@@ -82,14 +84,19 @@ export default function FeedScreen() {
             autoCorrect={false}
           />
           {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')} hitSlop={8} accessibilityLabel="Clear filter">
+            <Pressable
+              onPress={() => setSearch('')}
+              hitSlop={8}
+              android_ripple={{ color: colors.ripple, borderless: true, radius: 18 }}
+              accessibilityLabel="Clear filter"
+            >
               <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </Pressable>
           )}
         </View>
 
         {feed.isLoading ? (
-          <LoadingView />
+          <SkeletonFeed />
         ) : feed.isError ? (
           <ErrorView message={apiErrorMessage(feed.error)} onRetry={() => feed.refetch()} />
         ) : (

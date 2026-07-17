@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useRef } from 'react';
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Post } from '../api/types';
 import { colors, radius, spacing } from '../theme';
 import { relativeTime } from '../utils/relativeTime';
@@ -13,18 +13,41 @@ interface Props {
   onPressAuthor?: (username: string) => void;
 }
 
+const useNative = Platform.OS !== 'web';
+
 export const PostCard = React.memo(function PostCard({
   post,
   onToggleLike,
   onOpenComments,
   onPressAuthor,
 }: Props) {
+  const heartScale = useRef(new Animated.Value(1)).current;
+
+  function handleLikePress() {
+    Animated.sequence([
+      Animated.spring(heartScale, {
+        toValue: 1.35,
+        speed: 40,
+        bounciness: 14,
+        useNativeDriver: useNative,
+      }),
+      Animated.spring(heartScale, {
+        toValue: 1,
+        speed: 40,
+        bounciness: 10,
+        useNativeDriver: useNative,
+      }),
+    ]).start();
+    onToggleLike(post.id);
+  }
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <Pressable
           style={styles.authorRow}
           onPress={() => onPressAuthor?.(post.author.username)}
+          android_ripple={{ color: colors.ripple }}
           accessibilityRole="button"
           accessibilityLabel={`Filter posts by ${post.author.username}`}
         >
@@ -41,16 +64,19 @@ export const PostCard = React.memo(function PostCard({
       <View style={styles.actions}>
         <Pressable
           style={styles.action}
-          onPress={() => onToggleLike(post.id)}
+          onPress={handleLikePress}
+          android_ripple={{ color: colors.ripple, borderless: true, radius: 28 }}
           accessibilityRole="button"
           accessibilityLabel={post.likedByMe ? 'Unlike' : 'Like'}
           hitSlop={8}
         >
-          <Ionicons
-            name={post.likedByMe ? 'heart' : 'heart-outline'}
-            size={22}
-            color={post.likedByMe ? colors.like : colors.textMuted}
-          />
+          <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+            <Ionicons
+              name={post.likedByMe ? 'heart' : 'heart-outline'}
+              size={22}
+              color={post.likedByMe ? colors.like : colors.textMuted}
+            />
+          </Animated.View>
           <Text style={[styles.actionCount, post.likedByMe && styles.likedCount]}>
             {post.likeCount}
           </Text>
@@ -59,6 +85,7 @@ export const PostCard = React.memo(function PostCard({
         <Pressable
           style={styles.action}
           onPress={() => onOpenComments(post.id)}
+          android_ripple={{ color: colors.ripple, borderless: true, radius: 28 }}
           accessibilityRole="button"
           accessibilityLabel="View comments"
           hitSlop={8}
@@ -89,6 +116,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    borderRadius: radius.md,
   },
   authorMeta: {
     marginLeft: spacing.md,

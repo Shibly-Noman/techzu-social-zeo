@@ -13,6 +13,7 @@ import { apiErrorMessage } from '../../../src/api/client';
 import { useCreatePost } from '../../../src/api/hooks';
 import { Button } from '../../../src/components/Button';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
+import { useToast } from '../../../src/components/Toast';
 import { colors, radius, spacing } from '../../../src/theme';
 
 const MAX_LENGTH = 500;
@@ -20,6 +21,7 @@ const MAX_LENGTH = 500;
 export default function CreatePostScreen() {
   const router = useRouter();
   const createPost = useCreatePost();
+  const toast = useToast();
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +34,7 @@ export default function CreatePostScreen() {
     try {
       await createPost.mutateAsync(trimmed);
       setText('');
+      toast.show('Post published!');
       router.push('/(app)/(tabs)');
     } catch (err) {
       setError(apiErrorMessage(err));

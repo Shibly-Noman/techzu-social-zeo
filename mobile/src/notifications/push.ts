@@ -4,15 +4,17 @@ import { Platform } from 'react-native';
 import { api } from '../api/client';
 import { STORAGE_KEYS, storage } from '../auth/storage';
 
-/** How notifications behave when the app is in the foreground. */
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+/** How notifications behave when the app is in the foreground (native only). */
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 /**
  * Requests permission and registers this device's native FCM token with the

@@ -74,6 +74,7 @@ export default function PostDetailScreen() {
           <Pressable
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/(app)/(tabs)'))}
             hitSlop={8}
+            android_ripple={{ color: colors.ripple, borderless: true, radius: 22 }}
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
@@ -139,29 +140,37 @@ export default function PostDetailScreen() {
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
             <View style={styles.composer}>
-              <TextInput
-                style={styles.composerInput}
-                value={text}
-                onChangeText={setText}
-                placeholder="Write a comment…"
-                placeholderTextColor={colors.textMuted}
-                maxLength={300}
-                multiline
-                accessibilityLabel="Comment text"
-              />
-              <Pressable
-                style={[styles.sendButton, (!text.trim() || addComment.isPending) && styles.sendDisabled]}
-                onPress={handleSend}
-                disabled={!text.trim() || addComment.isPending}
-                accessibilityRole="button"
-                accessibilityLabel="Send comment"
-              >
-                {addComment.isPending ? (
-                  <ActivityIndicator size="small" color={colors.white} />
-                ) : (
-                  <Ionicons name="send" size={18} color={colors.white} />
-                )}
-              </Pressable>
+              <View style={styles.composerRow}>
+                <TextInput
+                  style={styles.composerInput}
+                  value={text}
+                  onChangeText={setText}
+                  placeholder="Write a comment…"
+                  placeholderTextColor={colors.textMuted}
+                  maxLength={300}
+                  multiline
+                  accessibilityLabel="Comment text"
+                />
+                <Pressable
+                  style={[styles.sendButton, (!text.trim() || addComment.isPending) && styles.sendDisabled]}
+                  onPress={handleSend}
+                  disabled={!text.trim() || addComment.isPending}
+                  android_ripple={{ color: colors.rippleOnPrimary, borderless: true, radius: 21 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Send comment"
+                >
+                  {addComment.isPending ? (
+                    <ActivityIndicator size="small" color={colors.white} />
+                  ) : (
+                    <Ionicons name="send" size={18} color={colors.white} />
+                  )}
+                </Pressable>
+              </View>
+              {text.length > 0 && (
+                <Text style={[styles.composerCount, text.length >= 280 && styles.composerCountLow]}>
+                  {text.length}/300
+                </Text>
+              )}
             </View>
           </KeyboardAvoidingView>
         ) : null}
@@ -233,14 +242,26 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   composer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.sm,
     padding: spacing.md,
     paddingHorizontal: spacing.lg,
     backgroundColor: colors.card,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  composerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+  },
+  composerCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+    textAlign: 'right',
+    marginTop: spacing.xs,
+  },
+  composerCountLow: {
+    color: colors.danger,
   },
   composerInput: {
     flex: 1,
