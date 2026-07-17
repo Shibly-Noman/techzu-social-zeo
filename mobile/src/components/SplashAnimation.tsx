@@ -1,9 +1,13 @@
 import LottieView from 'lottie-react-native';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { colors } from '../theme';
 
 const splashAnimation = require('../../assets/splash.json');
+
+// Intentionally NOT theme-reactive: this must exactly match app.json's static
+// native splash-screen backgroundColor so the native -> JS handoff has no
+// visible color snap, regardless of the user's selected theme/accent.
+const SPLASH_BACKGROUND = '#3B82F6';
 
 /** How long the splash animation is given to play before the app fades it out. */
 export const SPLASH_DURATION_MS = 3000;
@@ -32,7 +36,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: SPLASH_BACKGROUND,
   },
   animation: {
     width: '100%',

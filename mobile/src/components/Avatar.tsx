@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { avatarPalette, colors } from '../theme';
+import { avatarPalette, useThemedStyles, type Colors } from '../theme';
 
 interface Props {
   username: string;
@@ -15,7 +15,21 @@ function colorFor(username: string): string {
   return avatarPalette[Math.abs(hash) % avatarPalette.length];
 }
 
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    circle: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    initial: {
+      color: colors.white,
+      fontWeight: '700',
+    },
+  });
+}
+
 export function Avatar({ username, size = 40 }: Props) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View
       style={[
@@ -34,14 +48,3 @@ export function Avatar({ username, size = 40 }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  circle: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initial: {
-    color: colors.white,
-    fontWeight: '700',
-  },
-});

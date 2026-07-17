@@ -6,9 +6,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '../src/auth/AuthContext';
+import { AnimatedBackground } from '../src/components/AnimatedBackground';
 import { SPLASH_DURATION_MS, SplashAnimation } from '../src/components/SplashAnimation';
 import { ToastProvider } from '../src/components/Toast';
-import { colors } from '../src/theme';
+import { ThemeProvider, useTheme } from '../src/theme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +26,24 @@ const SPLASH_FADE_MS = 400;
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <ToastProvider>
+              <AppShell />
+            </ToastProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}
+
+/** Lives inside ThemeProvider so the stack background and splash can read the active theme. */
+function AppShell() {
+  const { resolvedScheme } = useTheme();
   const [splashVisible, setSplashVisible] = useState(true);
   const splashOpacity = useRef(new Animated.Value(1)).current;
 
@@ -44,30 +63,25 @@ export default function RootLayout() {
   }, [splashOpacity]);
 
   return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <ToastProvider>
-            {/* Edge-to-edge Android: dark icons; the app background shows through. */}
-            <StatusBar style="dark" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.background },
-              }}
-            />
-            {splashVisible ? (
-              <Animated.View
-                style={[styles.splashOverlay, { opacity: splashOpacity }]}
-                pointerEvents="none"
-              >
-                <SplashAnimation />
-              </Animated.View>
-            ) : null}
-          </ToastProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </SafeAreaProvider>
+    <>
+      {/* Edge-to-edge: status bar icon color follows the resolved theme. */}
+      <StatusBar style={resolvedScheme === 'dark' ? 'light' : 'dark'} />
+      <AnimatedBackground />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: 'transparent' },
+        }}
+      />
+      {splashVisible ? (
+        <Animated.View
+          style={[styles.splashOverlay, { opacity: splashOpacity }]}
+          pointerEvents="none"
+        >
+          <SplashAnimation />
+        </Animated.View>
+      ) : null}
+    </>
   );
 }
 

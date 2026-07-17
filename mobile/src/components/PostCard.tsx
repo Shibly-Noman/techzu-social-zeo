@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Post } from '../api/types';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing, useTheme, useThemedStyles, type Colors } from '../theme';
 import { relativeTime } from '../utils/relativeTime';
 import { Avatar } from './Avatar';
+import { GlassSurface } from './GlassSurface';
 import { PostComments } from './PostComments';
 
 interface Props {
@@ -21,12 +22,73 @@ interface Props {
 
 const useNative = Platform.OS !== 'web';
 
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    card: {
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    authorRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      borderRadius: radius.md,
+    },
+    authorMeta: {
+      marginLeft: spacing.md,
+      flexShrink: 1,
+      minWidth: 0,
+    },
+    username: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    time: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginTop: 1,
+    },
+    text: {
+      fontSize: 16,
+      lineHeight: 23,
+      color: colors.text,
+    },
+    actions: {
+      flexDirection: 'row',
+      marginTop: spacing.lg,
+      gap: spacing.xl,
+    },
+    action: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 32,
+    },
+    actionCount: {
+      fontSize: 14,
+      color: colors.textMuted,
+      fontWeight: '600',
+    },
+    likedCount: {
+      color: colors.like,
+    },
+  });
+}
+
 export const PostCard = React.memo(function PostCard({
   post,
   onToggleLike,
   onPressAuthor,
   commentsInline = true,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const heartScale = useRef(new Animated.Value(1)).current;
   const [commentsOpen, setCommentsOpen] = useState(false);
 
@@ -49,7 +111,7 @@ export const PostCard = React.memo(function PostCard({
   }
 
   return (
-    <View style={styles.card}>
+    <GlassSurface style={styles.card} radius={radius.lg}>
       <View style={styles.header}>
         <Pressable
           style={styles.authorRow}
@@ -60,7 +122,9 @@ export const PostCard = React.memo(function PostCard({
         >
           <Avatar username={post.author.username} />
           <View style={styles.authorMeta}>
-            <Text style={styles.username}>@{post.author.username}</Text>
+            <Text style={styles.username} numberOfLines={1}>
+              @{post.author.username}
+            </Text>
             <Text style={styles.time}>{relativeTime(post.createdAt)}</Text>
           </View>
         </Pressable>
@@ -107,65 +171,6 @@ export const PostCard = React.memo(function PostCard({
       </View>
 
       {commentsInline && commentsOpen ? <PostComments postId={post.id} /> : null}
-    </View>
+    </GlassSurface>
   );
-});
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    borderRadius: radius.md,
-  },
-  authorMeta: {
-    marginLeft: spacing.md,
-  },
-  username: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  time: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 1,
-  },
-  text: {
-    fontSize: 16,
-    lineHeight: 23,
-    color: colors.text,
-  },
-  actions: {
-    flexDirection: 'row',
-    marginTop: spacing.lg,
-    gap: spacing.xl,
-  },
-  action: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 32,
-  },
-  actionCount: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  likedCount: {
-    color: colors.like,
-  },
 });

@@ -22,7 +22,11 @@
       "Bash(curl -s -o /tmp/bundle4.js -w \"HTTP %{http_code}  size=%{size_download}\\\\n\" \"http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable\")",
       "Bash(curl -s -o /tmp/bundle5.js -w \"HTTP %{http_code}  size=%{size_download}\\\\n\" \"http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable\")",
       "Bash(tail -15 /tmp/expo_web.log)",
-      "Bash(curl -s -o /tmp/index_page2.html -w \"HTTP %{http_code}\\\\n\" \"http://localhost:8081/?platform=web\")"
+      "Bash(curl -s -o /tmp/index_page2.html -w \"HTTP %{http_code}\\\\n\" \"http://localhost:8081/?platform=web\")",
+      "Bash(xargs grep -ln \"tabBarBackground\\\\|useBottomTabBarHeight\")",
+      "Bash(curl -s -o /tmp/bundle_p1.js -w \"HTTP %{http_code}  size=%{size_download}\\\\n\" \"http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable\")",
+      "Bash(curl -s -o /tmp/bundle_p2.js -w \"HTTP %{http_code}  size=%{size_download}\\\\n\" \"http://localhost:8081/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable\")",
+      "PowerShell($env:Path = \"C:\\\\nvm4w\\\\nodejs;$env:Path\"; Set-Location \"c:\\\\shibly\\\\Techzu Assesment\\\\mobile\"; npx tsc --noEmit 2>&1 | Select-String \"error TS\" | ForEach-Object { $_.ToString\\(\\) })"
     ]
   }
 }

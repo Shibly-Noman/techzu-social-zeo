@@ -12,16 +12,92 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiErrorMessage } from '../../../src/api/client';
 import { useCreatePost } from '../../../src/api/hooks';
 import { Button } from '../../../src/components/Button';
+import { GlassSurface } from '../../../src/components/GlassSurface';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
 import { useToast } from '../../../src/components/Toast';
-import { colors, radius, spacing } from '../../../src/theme';
+import {
+  radius,
+  spacing,
+  useTabBarBottomPadding,
+  useTheme,
+  useThemedStyles,
+  type Colors,
+} from '../../../src/theme';
 
 const MAX_LENGTH = 500;
+
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: 'transparent' },
+    flex: { flex: 1 },
+    header: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
+      borderTopWidth: 0,
+      borderLeftWidth: 0,
+      borderRightWidth: 0,
+    },
+    headerTitle: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    body: {
+      flex: 1,
+      padding: spacing.xl,
+      paddingTop: spacing.sm,
+    },
+    inputWrap: {
+      minHeight: 160,
+      maxHeight: 320,
+    },
+    input: {
+      flex: 1,
+      padding: spacing.lg,
+      fontSize: 17,
+      lineHeight: 24,
+      color: colors.text,
+    },
+    footerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: spacing.lg,
+    },
+    counter: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textMuted,
+    },
+    counterLow: {
+      color: colors.danger,
+    },
+    publish: {
+      minWidth: 140,
+    },
+    errorBox: {
+      backgroundColor: '#FEF2F2',
+      borderColor: '#FECACA',
+      borderWidth: 1,
+      borderRadius: 12,
+      padding: spacing.md,
+      marginBottom: spacing.md,
+    },
+    errorText: {
+      color: colors.danger,
+      fontSize: 14,
+    },
+  });
+}
 
 export default function CreatePostScreen() {
   const router = useRouter();
   const createPost = useCreatePost();
   const toast = useToast();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tabBarPadding = useTabBarBottomPadding();
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -48,28 +124,30 @@ export default function CreatePostScreen() {
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View style={styles.header}>
+          <GlassSurface style={styles.header} radius={0}>
             <Text style={styles.headerTitle}>New post</Text>
-          </View>
+          </GlassSurface>
 
-          <View style={styles.body}>
+          <View style={[styles.body, { paddingBottom: tabBarPadding }]}>
             {error ? (
               <View style={styles.errorBox}>
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
 
-            <TextInput
-              style={styles.input}
-              value={text}
-              onChangeText={(value) => setText(value.slice(0, MAX_LENGTH))}
-              placeholder="What's happening?"
-              placeholderTextColor={colors.textMuted}
-              multiline
-              textAlignVertical="top"
-              maxLength={MAX_LENGTH}
-              accessibilityLabel="Post text"
-            />
+            <GlassSurface style={styles.inputWrap} radius={radius.lg}>
+              <TextInput
+                style={styles.input}
+                value={text}
+                onChangeText={(value) => setText(value.slice(0, MAX_LENGTH))}
+                placeholder="What's happening?"
+                placeholderTextColor={colors.textMuted}
+                multiline
+                textAlignVertical="top"
+                maxLength={MAX_LENGTH}
+                accessibilityLabel="Post text"
+              />
+            </GlassSurface>
 
             <View style={styles.footerRow}>
               <Text style={[styles.counter, remaining <= 20 && styles.counterLow]}>
@@ -89,64 +167,3 @@ export default function CreatePostScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  flex: { flex: 1 },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  body: {
-    flex: 1,
-    padding: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  input: {
-    minHeight: 160,
-    maxHeight: 320,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    fontSize: 17,
-    lineHeight: 24,
-    color: colors.text,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.lg,
-  },
-  counter: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  counterLow: {
-    color: colors.danger,
-  },
-  publish: {
-    minWidth: 140,
-  },
-  errorBox: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  errorText: {
-    color: colors.danger,
-    fontSize: 14,
-  },
-});

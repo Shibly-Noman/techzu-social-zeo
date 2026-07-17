@@ -1,9 +1,49 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Platform, StyleSheet, View } from 'react-native';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing, useThemedStyles, type Colors } from '../theme';
+
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    list: {
+      paddingHorizontal: spacing.lg,
+    },
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    avatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.skeleton,
+    },
+    meta: {
+      marginLeft: spacing.md,
+    },
+    bar: {
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: colors.skeleton,
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.xl,
+      marginTop: spacing.lg,
+    },
+  });
+}
 
 /** Pulsing placeholder card shown while the feed loads. */
 export function SkeletonPostCard() {
+  const styles = useThemedStyles(createStyles);
   const pulse = useRef(new Animated.Value(0.45)).current;
 
   useEffect(() => {
@@ -45,6 +85,7 @@ export function SkeletonPostCard() {
 }
 
 export function SkeletonFeed({ count = 4 }: { count?: number }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.list}>
       {Array.from({ length: count }, (_, i) => (
@@ -53,40 +94,3 @@ export function SkeletonFeed({ count = 4 }: { count?: number }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  list: {
-    paddingHorizontal: spacing.lg,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.skeleton,
-  },
-  meta: {
-    marginLeft: spacing.md,
-  },
-  bar: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.skeleton,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.xl,
-    marginTop: spacing.lg,
-  },
-});

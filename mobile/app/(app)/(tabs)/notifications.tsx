@@ -15,10 +15,87 @@ import { apiErrorMessage } from '../../../src/api/client';
 import { useMarkNotificationsRead, useNotifications } from '../../../src/api/hooks';
 import type { NotificationItem } from '../../../src/api/types';
 import { Avatar } from '../../../src/components/Avatar';
+import { GlassSurface } from '../../../src/components/GlassSurface';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
 import { EmptyState, ErrorView, LoadingView } from '../../../src/components/StatusViews';
-import { colors, radius, spacing } from '../../../src/theme';
+import {
+  radius,
+  spacing,
+  useTabBarBottomPadding,
+  useTheme,
+  useThemedStyles,
+  type Colors,
+} from '../../../src/theme';
 import { relativeTime } from '../../../src/utils/relativeTime';
+
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: 'transparent' },
+    header: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
+      borderTopWidth: 0,
+      borderLeftWidth: 0,
+      borderRightWidth: 0,
+    },
+    headerTitle: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    list: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.xl,
+      flexGrow: 1,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.lg,
+      marginBottom: spacing.sm,
+    },
+    unreadBar: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      bottom: 0,
+      width: 3,
+      backgroundColor: colors.primary,
+    },
+    rowBody: {
+      flex: 1,
+      minWidth: 0,
+    },
+    rowText: {
+      fontSize: 15,
+      color: colors.text,
+      lineHeight: 21,
+    },
+    rowActor: {
+      fontWeight: '700',
+    },
+    rowQuote: {
+      fontSize: 14,
+      color: colors.text,
+      marginTop: 2,
+    },
+    rowPost: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    rowTime: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+    footerSpinner: {
+      marginVertical: spacing.lg,
+    },
+  });
+}
 
 function NotificationRow({
   item,
@@ -27,42 +104,45 @@ function NotificationRow({
   item: NotificationItem;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   return (
-    <Pressable
-      style={[styles.row, !item.read && styles.rowUnread]}
-      onPress={onPress}
-      android_ripple={{ color: colors.ripple }}
-      accessibilityRole="button"
-    >
-      <Avatar username={item.actor.username} size={42} />
-      <View style={styles.rowBody}>
-        <Text style={styles.rowText}>
-          <Text style={styles.rowActor}>@{item.actor.username}</Text>
-          {item.type === 'like' ? ' liked your post' : ' commented on your post'}
-        </Text>
-        {item.type === 'comment' && item.commentText ? (
-          <Text style={styles.rowQuote} numberOfLines={2}>
-            “{item.commentText}”
+    <Pressable onPress={onPress} android_ripple={{ color: colors.ripple }} accessibilityRole="button">
+      <GlassSurface style={styles.row} radius={radius.lg}>
+        {!item.read ? <View style={styles.unreadBar} /> : null}
+        <Avatar username={item.actor.username} size={42} />
+        <View style={styles.rowBody}>
+          <Text style={styles.rowText}>
+            <Text style={styles.rowActor}>@{item.actor.username}</Text>
+            {item.type === 'like' ? ' liked your post' : ' commented on your post'}
           </Text>
-        ) : null}
-        {item.post ? (
-          <Text style={styles.rowPost} numberOfLines={1}>
-            {item.post.text}
-          </Text>
-        ) : null}
-        <Text style={styles.rowTime}>{relativeTime(item.createdAt)}</Text>
-      </View>
-      <Ionicons
-        name={item.type === 'like' ? 'heart' : 'chatbubble'}
-        size={18}
-        color={item.type === 'like' ? colors.like : colors.primary}
-      />
+          {item.type === 'comment' && item.commentText ? (
+            <Text style={styles.rowQuote} numberOfLines={2}>
+              “{item.commentText}”
+            </Text>
+          ) : null}
+          {item.post ? (
+            <Text style={styles.rowPost} numberOfLines={1}>
+              {item.post.text}
+            </Text>
+          ) : null}
+          <Text style={styles.rowTime}>{relativeTime(item.createdAt)}</Text>
+        </View>
+        <Ionicons
+          name={item.type === 'like' ? 'heart' : 'chatbubble'}
+          size={18}
+          color={item.type === 'like' ? colors.like : colors.primary}
+        />
+      </GlassSurface>
     </Pressable>
   );
 }
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tabBarPadding = useTabBarBottomPadding();
   const query = useNotifications();
   const markRead = useMarkNotificationsRead();
 
@@ -84,9 +164,9 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenContainer>
-        <View style={styles.header}>
+        <GlassSurface style={styles.header} radius={0}>
           <Text style={styles.headerTitle}>Activity</Text>
-        </View>
+        </GlassSurface>
 
         {query.isLoading ? (
           <LoadingView />
@@ -96,7 +176,7 @@ export default function NotificationsScreen() {
           <FlatList
             data={items}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.list}
+            contentContainerStyle={[styles.list, { paddingBottom: tabBarPadding }]}
             renderItem={({ item }) => (
               <NotificationRow
                 item={item}
@@ -137,66 +217,3 @@ export default function NotificationsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  list: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-    flexGrow: 1,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  rowUnread: {
-    backgroundColor: colors.primarySoft,
-    borderColor: '#C7D2FE',
-  },
-  rowBody: {
-    flex: 1,
-  },
-  rowText: {
-    fontSize: 15,
-    color: colors.text,
-    lineHeight: 21,
-  },
-  rowActor: {
-    fontWeight: '700',
-  },
-  rowQuote: {
-    fontSize: 14,
-    color: colors.text,
-    marginTop: 2,
-  },
-  rowPost: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  rowTime: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  footerSpinner: {
-    marginVertical: spacing.lg,
-  },
-});

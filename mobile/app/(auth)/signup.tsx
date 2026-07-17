@@ -15,7 +15,7 @@ import { useAuth } from '../../src/auth/AuthContext';
 import { Button } from '../../src/components/Button';
 import { Field } from '../../src/components/Field';
 import { ScreenContainer } from '../../src/components/ScreenContainer';
-import { colors, spacing } from '../../src/theme';
+import { spacing, useTheme, useThemedStyles, type Colors } from '../../src/theme';
 
 function validate(username: string, email: string, password: string) {
   const errors: { username?: string; email?: string; password?: string } = {};
@@ -31,8 +31,73 @@ function validate(username: string, email: string, password: string) {
   return errors;
 }
 
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: 'transparent' },
+    flex: { flex: 1 },
+    scroll: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      padding: spacing.xl,
+    },
+    hero: {
+      alignItems: 'center',
+      marginBottom: spacing.xxl,
+    },
+    logo: {
+      width: 68,
+      height: 68,
+      borderRadius: 20,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.lg,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    subtitle: {
+      fontSize: 15,
+      color: colors.textMuted,
+      marginTop: spacing.xs,
+    },
+    errorBox: {
+      backgroundColor: '#FEF2F2',
+      borderColor: '#FECACA',
+      borderWidth: 1,
+      borderRadius: 12,
+      padding: spacing.md,
+      marginBottom: spacing.lg,
+    },
+    errorText: {
+      color: colors.danger,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      marginTop: spacing.xl,
+    },
+    footerText: {
+      color: colors.textMuted,
+      fontSize: 15,
+    },
+    footerLink: {
+      color: colors.primary,
+      fontWeight: '700',
+      fontSize: 15,
+    },
+  });
+}
+
 export default function SignupScreen() {
   const { signup } = useAuth();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -131,64 +196,3 @@ export default function SignupScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  flex: { flex: 1 },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
-  hero: {
-    alignItems: 'center',
-    marginBottom: spacing.xxl,
-  },
-  logo: {
-    width: 68,
-    height: 68,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  errorBox: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  errorText: {
-    color: colors.danger,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.xl,
-  },
-  footerText: {
-    color: colors.textMuted,
-    fontSize: 15,
-  },
-  footerLink: {
-    color: colors.primary,
-    fontWeight: '700',
-    fontSize: 15,
-  },
-});

@@ -29,4 +29,9 @@ export const STORAGE_KEYS = {
   token: 'auth.token',
   user: 'auth.user',
   fcmToken: 'push.fcmToken',
+  themeMode: 'prefs.mode',
+  accentId: 'prefs.accentId',
+  backgroundStyle: 'prefs.backgroundStyle',
+  reduceMotion: 'prefs.reduceMotion',
+  glassEnabled: 'prefs.glassEnabled',
 } as const;

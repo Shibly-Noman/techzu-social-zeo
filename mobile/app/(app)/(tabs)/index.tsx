@@ -16,14 +16,85 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiErrorMessage } from '../../../src/api/client';
 import { useFeed, useToggleLike } from '../../../src/api/hooks';
 import { useAuth } from '../../../src/auth/AuthContext';
+import { GlassSurface } from '../../../src/components/GlassSurface';
 import { PostCard } from '../../../src/components/PostCard';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
 import { SkeletonFeed } from '../../../src/components/SkeletonPostCard';
 import { EmptyState, ErrorView } from '../../../src/components/StatusViews';
-import { colors, radius, spacing } from '../../../src/theme';
+import {
+  radius,
+  spacing,
+  useTabBarBottomPadding,
+  useTheme,
+  useThemedStyles,
+  type Colors,
+} from '../../../src/theme';
+
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: 'transparent' },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
+      borderTopWidth: 0,
+      borderLeftWidth: 0,
+      borderRightWidth: 0,
+    },
+    headerTitle: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: colors.text,
+      flexShrink: 0,
+    },
+    headerRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      flexShrink: 1,
+      minWidth: 0,
+      marginLeft: spacing.md,
+    },
+    headerUser: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textMuted,
+      flexShrink: 1,
+    },
+    searchBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      marginHorizontal: spacing.xl,
+      marginBottom: spacing.md,
+      minHeight: 44,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 15,
+      color: colors.text,
+      paddingVertical: spacing.sm,
+    },
+    list: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.xl,
+      flexGrow: 1,
+    },
+    footerSpinner: {
+      marginVertical: spacing.lg,
+    },
+  });
+}
 
 export default function FeedScreen() {
   const { user, logout } = useAuth();
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const tabBarPadding = useTabBarBottomPadding();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -54,10 +125,12 @@ export default function FeedScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenContainer>
-        <View style={styles.header}>
+        <GlassSurface style={styles.header} radius={0}>
           <Text style={styles.headerTitle}>Feed</Text>
           <View style={styles.headerRight}>
-            <Text style={styles.headerUser}>@{user?.username}</Text>
+            <Text style={styles.headerUser} numberOfLines={1}>
+              @{user?.username}
+            </Text>
             <Pressable
               onPress={confirmLogout}
               hitSlop={8}
@@ -68,9 +141,9 @@ export default function FeedScreen() {
               <Ionicons name="log-out-outline" size={24} color={colors.textMuted} />
             </Pressable>
           </View>
-        </View>
+        </GlassSurface>
 
-        <View style={styles.searchBox}>
+        <GlassSurface style={styles.searchBox} radius={radius.md}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
             style={styles.searchInput}
@@ -91,7 +164,7 @@ export default function FeedScreen() {
               <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </Pressable>
           )}
-        </View>
+        </GlassSurface>
 
         {feed.isLoading ? (
           <SkeletonFeed />
@@ -101,7 +174,7 @@ export default function FeedScreen() {
           <FlatList
             data={posts}
             keyExtractor={(post) => post.id}
-            contentContainerStyle={styles.list}
+            contentContainerStyle={[styles.list, { paddingBottom: tabBarPadding }]}
             renderItem={({ item }) => (
               <PostCard
                 post={item}
@@ -145,57 +218,3 @@ export default function FeedScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  headerUser: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    minHeight: 44,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.text,
-    paddingVertical: spacing.sm,
-  },
-  list: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-    flexGrow: 1,
-  },
-  footerSpinner: {
-    marginVertical: spacing.lg,
-  },
-});

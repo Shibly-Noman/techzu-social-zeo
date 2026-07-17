@@ -8,7 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { Animated, Platform, StyleSheet, Text } from 'react-native';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing, useThemedStyles, type Colors } from '../theme';
 
 interface ToastContextValue {
   show: (message: string) => void;
@@ -19,8 +19,36 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 const VISIBLE_MS = 2200;
 const useNative = Platform.OS !== 'web';
 
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    toast: {
+      position: 'absolute',
+      bottom: 96,
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: '#1E293B',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderRadius: radius.full,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    text: {
+      color: colors.white,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+  });
+}
+
 /** Lightweight success toast rendered above the tab bar. */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const styles = useThemedStyles(createStyles);
   const [message, setMessage] = useState<string | null>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(16)).current;
@@ -67,28 +95,3 @@ export function useToast(): ToastContextValue {
   if (!ctx) throw new Error('useToast must be used inside ToastProvider');
   return ctx;
 }
-
-const styles = StyleSheet.create({
-  toast: {
-    position: 'absolute',
-    bottom: 96,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: '#1E293B',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radius.full,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  text: {
-    color: colors.white,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-});

@@ -7,7 +7,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { colors, radius, spacing } from '../theme';
+import { radius, spacing, useTheme, useThemedStyles, type Colors } from '../theme';
 
 interface Props {
   title: string;
@@ -18,7 +18,42 @@ interface Props {
   style?: StyleProp<ViewStyle>;
 }
 
+function createStyles(colors: Colors) {
+  return StyleSheet.create({
+    base: {
+      minHeight: 48,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.lg,
+      overflow: 'hidden', // clips the Android ripple to the rounded corners
+    },
+    primary: {
+      backgroundColor: colors.primary,
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+    },
+    pressed: {
+      opacity: 0.85,
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+    label: {
+      color: colors.white,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    ghostLabel: {
+      color: colors.primary,
+    },
+  });
+}
+
 export function Button({ title, onPress, loading, disabled, variant = 'primary', style }: Props) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const isDisabled = disabled || loading;
   return (
     <Pressable
@@ -44,34 +79,3 @@ export function Button({ title, onPress, loading, disabled, variant = 'primary',
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    minHeight: 48,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    overflow: 'hidden', // clips the Android ripple to the rounded corners
-  },
-  primary: {
-    backgroundColor: colors.primary,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  label: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  ghostLabel: {
-    color: colors.primary,
-  },
-});
