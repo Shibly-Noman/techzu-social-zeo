@@ -21,6 +21,20 @@ cp .env.example .env    # then edit values
 npm run dev             # tsx watch mode on http://localhost:4000
 ```
 
+### Run with Docker
+
+The whole backend (API + MongoDB) can run with one command from the **repo root**:
+
+```bash
+docker compose up --build
+```
+
+- API on http://localhost:4000; MongoDB is internal to the compose network (not published).
+- Data persists in the `mongo-data` volume; `docker compose down -v` wipes it.
+- Override secrets via shell env or a root `.env` file: `JWT_SECRET`, `FIREBASE_SERVICE_ACCOUNT_BASE64`.
+
+[backend/Dockerfile](Dockerfile) is a multi-stage build: TypeScript compiles in a build stage, and the runtime image is `node:20-alpine` with production dependencies only, running as the non-root `node` user.
+
 ### Environment variables
 
 | Variable | Required | Description |
@@ -187,7 +201,6 @@ src/
 ## Deployment (Render)
 
 - **Root directory:** `backend`
-- **Build command:** `npm install && npm run build`
-- **Start command:** `npm start`
+- With the root directory set, Render **auto-detects the [Dockerfile](Dockerfile)** and builds/runs the container image — no build or start command needed. (To force the native Node runtime instead, set language to Node with build `npm install && npm run build` and start `npm start`.)
 - **Health check path:** `/health`
-- Set env vars from the table above (use the base64 helper in `.env.example` for the Firebase service account).
+- Set env vars from the table above (use the base64 helper in `.env.example` for the Firebase service account). `MONGODB_URI` must point at MongoDB Atlas — the compose `mongo` service exists only for local development.
