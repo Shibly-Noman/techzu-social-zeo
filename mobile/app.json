@@ -18,7 +18,7 @@
       "package": "com.shibly.minisocialfeed",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#EEF2FF",
+        "backgroundColor": "#EFF6FF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -35,7 +35,7 @@
       [
         "expo-notifications",
         {
-          "color": "#4F46E5"
+          "color": "#3B82F6"
         }
       ],
       [
@@ -44,7 +44,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 180,
           "resizeMode": "contain",
-          "backgroundColor": "#4F46E5"
+          "backgroundColor": "#3B82F6"
         }
       ]
     ],

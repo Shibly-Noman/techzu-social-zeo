@@ -1,16 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Post } from '../api/types';
 import { colors, radius, spacing } from '../theme';
 import { relativeTime } from '../utils/relativeTime';
 import { Avatar } from './Avatar';
+import { PostComments } from './PostComments';
 
 interface Props {
   post: Post;
   onToggleLike: (postId: string) => void;
-  onOpenComments: (postId: string) => void;
   onPressAuthor?: (username: string) => void;
+  /**
+   * Whether tapping the comment button expands an inline thread in place.
+   * Set to false on the post detail page, which already shows the full
+   * thread below and doesn't need its own toggle.
+   */
+  commentsInline?: boolean;
 }
 
 const useNative = Platform.OS !== 'web';
@@ -18,10 +24,11 @@ const useNative = Platform.OS !== 'web';
 export const PostCard = React.memo(function PostCard({
   post,
   onToggleLike,
-  onOpenComments,
   onPressAuthor,
+  commentsInline = true,
 }: Props) {
   const heartScale = useRef(new Animated.Value(1)).current;
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
   function handleLikePress() {
     Animated.sequence([
@@ -84,16 +91,22 @@ export const PostCard = React.memo(function PostCard({
 
         <Pressable
           style={styles.action}
-          onPress={() => onOpenComments(post.id)}
-          android_ripple={{ color: colors.ripple, borderless: true, radius: 28 }}
+          onPress={commentsInline ? () => setCommentsOpen((open) => !open) : undefined}
+          android_ripple={commentsInline ? { color: colors.ripple, borderless: true, radius: 28 } : undefined}
           accessibilityRole="button"
-          accessibilityLabel="View comments"
+          accessibilityLabel={commentsOpen ? 'Hide comments' : 'View comments'}
           hitSlop={8}
         >
-          <Ionicons name="chatbubble-outline" size={20} color={colors.textMuted} />
+          <Ionicons
+            name={commentsInline && commentsOpen ? 'chatbubble' : 'chatbubble-outline'}
+            size={20}
+            color={commentsInline && commentsOpen ? colors.primary : colors.textMuted}
+          />
           <Text style={styles.actionCount}>{post.commentCount}</Text>
         </Pressable>
       </View>
+
+      {commentsInline && commentsOpen ? <PostComments postId={post.id} /> : null}
     </View>
   );
 });

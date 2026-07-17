@@ -7,5 +7,5 @@ export default function Index() {
   const { status } = useAuth();
 
   if (status === 'loading') return <LoadingView />;
-  return <Redirect href={status === 'signedIn' ? '/(app)/(tabs)' : '/(auth)/login'} />;
+  return <Redirect href={status === 'signedIn' ? '/(app)/(tabs)' : '/(auth)/welcome'} />;
 }

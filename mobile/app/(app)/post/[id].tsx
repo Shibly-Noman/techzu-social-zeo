@@ -105,7 +105,7 @@ export default function PostDetailScreen() {
                   <PostCard
                     post={postQuery.data}
                     onToggleLike={(postId) => toggleLike.mutate(postId)}
-                    onOpenComments={() => {}}
+                    commentsInline={false}
                   />
                   <Text style={styles.commentsTitle}>
                     Comments ({postQuery.data.commentCount})

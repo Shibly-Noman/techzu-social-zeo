@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,7 +23,6 @@ import { EmptyState, ErrorView } from '../../../src/components/StatusViews';
 import { colors, radius, spacing } from '../../../src/theme';
 
 export default function FeedScreen() {
-  const router = useRouter();
   const { user, logout } = useAuth();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -108,7 +106,6 @@ export default function FeedScreen() {
               <PostCard
                 post={item}
                 onToggleLike={(id) => toggleLike.mutate(id)}
-                onOpenComments={(id) => router.push(`/(app)/post/${id}`)}
                 onPressAuthor={(username) => setSearch(username)}
               />
             )}

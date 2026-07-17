@@ -1,7 +1,7 @@
 export const colors = {
-  primary: '#4F46E5',
-  primaryDark: '#4338CA',
-  primarySoft: '#EEF2FF',
+  primary: '#3B82F6',
+  primaryDark: '#2563EB',
+  primarySoft: '#EFF6FF',
   background: '#F1F5F9',
   card: '#FFFFFF',
   text: '#0F172A',
@@ -11,7 +11,7 @@ export const colors = {
   danger: '#DC2626',
   white: '#FFFFFF',
   /** android_ripple colors */
-  ripple: 'rgba(79, 70, 229, 0.12)',
+  ripple: 'rgba(59, 130, 246, 0.12)',
   rippleOnPrimary: 'rgba(255, 255, 255, 0.25)',
   skeleton: '#E2E8F0',
 };
