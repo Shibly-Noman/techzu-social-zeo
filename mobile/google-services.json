@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "993671812275",
+    "project_id": "techzuassesment",
+    "storage_bucket": "techzuassesment.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:993671812275:android:a519064c44e99f9c43ccc6",
+        "android_client_info": {
+          "package_name": "com.shibly.minisocialfeed"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgTS22RiA7XKVl1C88jm83tcJOLiK9EjE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

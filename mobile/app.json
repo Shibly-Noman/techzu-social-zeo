@@ -16,6 +16,7 @@
     },
     "android": {
       "package": "com.shibly.minisocialfeed",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#EEF2FF",
         "foregroundImage": "./assets/android-icon-foreground.png",
