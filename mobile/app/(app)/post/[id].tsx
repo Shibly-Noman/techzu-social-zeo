@@ -15,14 +15,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiErrorMessage } from '../../../src/api/client';
 import { useAddComment, useComments, usePost, useToggleLike } from '../../../src/api/hooks';
-import type { Comment } from '../../../src/api/types';
-import { Avatar } from '../../../src/components/Avatar';
+import { CommentRow, type ReplyTarget } from '../../../src/components/CommentRow';
 import { GlassSurface } from '../../../src/components/GlassSurface';
+import { MentionAutocomplete } from '../../../src/components/MentionAutocomplete';
 import { PostCard } from '../../../src/components/PostCard';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
 import { EmptyState, ErrorView, LoadingView } from '../../../src/components/StatusViews';
+import { useAuth } from '../../../src/auth/AuthContext';
+import { applyMention, useMentionSuggestions } from '../../../src/hooks/useMentionSuggestions';
 import { radius, spacing, useTheme, useThemedStyles, type Colors } from '../../../src/theme';
-import { relativeTime } from '../../../src/utils/relativeTime';
 
 function createStyles(colors: Colors) {
   return StyleSheet.create({
@@ -45,6 +46,7 @@ function createStyles(colors: Colors) {
     },
     list: {
       paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
       paddingBottom: spacing.md,
       flexGrow: 1,
     },
@@ -56,39 +58,6 @@ function createStyles(colors: Colors) {
       fontWeight: '700',
       color: colors.text,
       marginBottom: spacing.sm,
-    },
-    comment: {
-      flexDirection: 'row',
-      gap: spacing.md,
-      padding: spacing.md,
-      marginBottom: spacing.sm,
-    },
-    commentBody: {
-      flex: 1,
-      minWidth: 0,
-    },
-    commentHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    commentAuthor: {
-      fontSize: 14,
-      fontWeight: '700',
-      color: colors.text,
-      flexShrink: 1,
-      minWidth: 0,
-    },
-    commentTime: {
-      fontSize: 12,
-      color: colors.textMuted,
-      flexShrink: 0,
-    },
-    commentText: {
-      fontSize: 15,
-      color: colors.text,
-      marginTop: 2,
-      lineHeight: 21,
     },
     composer: {
       padding: spacing.md,
@@ -122,6 +91,8 @@ function createStyles(colors: Colors) {
       paddingVertical: spacing.sm,
       fontSize: 15,
       color: colors.text,
+      borderWidth: 0,
+      outlineWidth: 0,
     },
     sendButton: {
       width: 42,
@@ -137,8 +108,23 @@ function createStyles(colors: Colors) {
     errorText: {
       color: colors.danger,
       fontSize: 13,
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.xs,
+    },
+    replyingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       paddingHorizontal: spacing.xl,
       paddingBottom: spacing.xs,
+    },
+    replyingText: {
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    replyingUsername: {
+      fontWeight: '700',
+      color: colors.text,
     },
     footerSpinner: {
       marginVertical: spacing.lg,
@@ -146,27 +132,10 @@ function createStyles(colors: Colors) {
   });
 }
 
-function CommentRow({ comment }: { comment: Comment }) {
-  const styles = useThemedStyles(createStyles);
-  return (
-    <GlassSurface style={styles.comment} radius={radius.md}>
-      <Avatar username={comment.author.username} size={34} />
-      <View style={styles.commentBody}>
-        <View style={styles.commentHeader}>
-          <Text style={styles.commentAuthor} numberOfLines={1}>
-            @{comment.author.username}
-          </Text>
-          <Text style={styles.commentTime}>{relativeTime(comment.createdAt)}</Text>
-        </View>
-        <Text style={styles.commentText}>{comment.text}</Text>
-      </View>
-    </GlassSurface>
-  );
-}
-
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
 
@@ -177,19 +146,33 @@ export default function PostDetailScreen() {
 
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+  const mention = useMentionSuggestions(text);
 
   const comments = useMemo(
     () => commentsQuery.data?.pages.flatMap((page) => page.comments) ?? [],
     [commentsQuery.data]
   );
 
+  function handleReply(target: ReplyTarget) {
+    setError(null);
+    setReplyTarget(target);
+    setText(user?.username === target.username ? '' : `@${target.username} `);
+  }
+
+  function cancelReply() {
+    setReplyTarget(null);
+    setText('');
+  }
+
   async function handleSend() {
     const trimmed = text.trim();
     if (!trimmed || addComment.isPending) return;
     setError(null);
     try {
-      await addComment.mutateAsync(trimmed);
+      await addComment.mutateAsync({ text: trimmed, parentCommentId: replyTarget?.commentId });
       setText('');
+      setReplyTarget(null);
     } catch (err) {
       setError(apiErrorMessage(err));
     }
@@ -233,6 +216,9 @@ export default function PostDetailScreen() {
                   <PostCard
                     post={postQuery.data}
                     onToggleLike={(postId) => toggleLike.mutate(postId)}
+                    onPressAuthor={(username) =>
+                      router.push({ pathname: '/(app)/profile/[username]', params: { username } })
+                    }
                     commentsInline={false}
                   />
                   <Text style={styles.commentsTitle}>
@@ -240,7 +226,7 @@ export default function PostDetailScreen() {
                   </Text>
                 </View>
               }
-              renderItem={({ item }) => <CommentRow comment={item} />}
+              renderItem={({ item }) => <CommentRow comment={item} onReply={handleReply} />}
               onEndReached={() => {
                 if (commentsQuery.hasNextPage && !commentsQuery.isFetchingNextPage) {
                   void commentsQuery.fetchNextPage();
@@ -267,14 +253,36 @@ export default function PostDetailScreen() {
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
+            {replyTarget ? (
+              <View style={styles.replyingRow}>
+                <Text style={styles.replyingText}>
+                  Replying to <Text style={styles.replyingUsername}>@{replyTarget.username}</Text>
+                </Text>
+                <Pressable
+                  onPress={cancelReply}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel reply"
+                >
+                  <Ionicons name="close" size={16} color={colors.textMuted} />
+                </Pressable>
+              </View>
+            ) : null}
+
             <GlassSurface style={styles.composer} radius={0}>
+              {mention.active ? (
+                <MentionAutocomplete
+                  users={mention.suggestions}
+                  onSelect={(username) => setText((t) => applyMention(t, username))}
+                />
+              ) : null}
               <View style={styles.composerRow}>
                 <GlassSurface style={styles.inputWrap} radius={radius.md}>
                   <TextInput
                     style={styles.composerInput}
                     value={text}
                     onChangeText={setText}
-                    placeholder="Write a comment…"
+                    placeholder={replyTarget ? `Reply to @${replyTarget.username}…` : 'Write a comment…'}
                     placeholderTextColor={colors.textMuted}
                     maxLength={300}
                     multiline

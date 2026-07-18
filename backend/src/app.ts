@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { env } from './config/env';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth.routes';
+import commentsRoutes from './routes/comments.routes';
 import notificationsRoutes from './routes/notifications.routes';
 import postsRoutes from './routes/posts.routes';
 import usersRoutes from './routes/users.routes';
@@ -28,6 +29,7 @@ export function createApp() {
   app.use('/api/auth', authRoutes);
   app.use('/api/users', usersRoutes);
   app.use('/api/posts', postsRoutes);
+  app.use('/api/comments', commentsRoutes);
   app.use('/api/notifications', notificationsRoutes);
 
   app.use(notFoundHandler);

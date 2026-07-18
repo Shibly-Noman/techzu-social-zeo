@@ -46,10 +46,18 @@
           "resizeMode": "contain",
           "backgroundColor": "#3B82F6"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "276cbe39-480b-458f-b23e-e08a2427e66a"
+      }
+    },
+    "owner": "shibly_noman"
   }
 }

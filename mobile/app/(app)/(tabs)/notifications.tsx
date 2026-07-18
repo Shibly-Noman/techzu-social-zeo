@@ -26,12 +26,16 @@ import {
   useThemedStyles,
   type Colors,
 } from '../../../src/theme';
+import { NOTIFICATION_META } from '../../../src/utils/notificationMeta';
 import { relativeTime } from '../../../src/utils/relativeTime';
 
 function createStyles(colors: Colors) {
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: 'transparent' },
     header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.md,
       paddingBottom: spacing.sm,
@@ -46,6 +50,7 @@ function createStyles(colors: Colors) {
     },
     list: {
       paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
       paddingBottom: spacing.xl,
       flexGrow: 1,
     },
@@ -100,25 +105,52 @@ function createStyles(colors: Colors) {
 function NotificationRow({
   item,
   onPress,
+  onPressActor,
 }: {
   item: NotificationItem;
   onPress: () => void;
+  onPressActor: () => void;
 }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const meta = NOTIFICATION_META[item.type];
+  const quote = item.comment?.text ?? item.commentText;
+
+  // Note: no accessibilityRole="button" here — that renders as an actual
+  // <button> on web, and the avatar/username below are real nested buttons
+  // (accessibilityRole="button"). A <button> can't validly contain another
+  // <button> in HTML, which React throws a hydration error over.
   return (
-    <Pressable onPress={onPress} android_ripple={{ color: colors.ripple }} accessibilityRole="button">
+    <Pressable onPress={onPress} android_ripple={{ color: colors.ripple }}>
       <GlassSurface style={styles.row} radius={radius.lg}>
         {!item.read ? <View style={styles.unreadBar} /> : null}
-        <Avatar username={item.actor.username} size={42} />
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            onPressActor();
+          }}
+          hitSlop={4}
+          accessibilityRole="button"
+          accessibilityLabel={`View @${item.actor.username}'s profile`}
+        >
+          <Avatar username={item.actor.username} size={42} />
+        </Pressable>
         <View style={styles.rowBody}>
           <Text style={styles.rowText}>
-            <Text style={styles.rowActor}>@{item.actor.username}</Text>
-            {item.type === 'like' ? ' liked your post' : ' commented on your post'}
+            <Text
+              style={styles.rowActor}
+              onPress={(e) => {
+                e.stopPropagation();
+                onPressActor();
+              }}
+            >
+              @{item.actor.username}
+            </Text>
+            {meta.label}
           </Text>
-          {item.type === 'comment' && item.commentText ? (
+          {quote ? (
             <Text style={styles.rowQuote} numberOfLines={2}>
-              “{item.commentText}”
+              “{quote}”
             </Text>
           ) : null}
           {item.post ? (
@@ -128,11 +160,7 @@ function NotificationRow({
           ) : null}
           <Text style={styles.rowTime}>{relativeTime(item.createdAt)}</Text>
         </View>
-        <Ionicons
-          name={item.type === 'like' ? 'heart' : 'chatbubble'}
-          size={18}
-          color={item.type === 'like' ? colors.like : colors.primary}
-        />
+        <Ionicons name={meta.icon} size={18} color={meta.heart ? colors.like : colors.primary} />
       </GlassSurface>
     </Pressable>
   );
@@ -165,6 +193,15 @@ export default function NotificationsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenContainer>
         <GlassSurface style={styles.header} radius={0}>
+          <Pressable
+            onPress={() => router.replace('/(app)/(tabs)')}
+            hitSlop={8}
+            android_ripple={{ color: colors.ripple, borderless: true, radius: 22 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back to feed"
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </Pressable>
           <Text style={styles.headerTitle}>Activity</Text>
         </GlassSurface>
 
@@ -183,6 +220,12 @@ export default function NotificationsScreen() {
                 onPress={() => {
                   if (item.post) router.push(`/(app)/post/${item.post.id}`);
                 }}
+                onPressActor={() =>
+                  router.push({
+                    pathname: '/(app)/profile/[username]',
+                    params: { username: item.actor.username },
+                  })
+                }
               />
             )}
             refreshControl={

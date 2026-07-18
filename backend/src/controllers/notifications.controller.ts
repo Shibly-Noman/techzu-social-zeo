@@ -12,7 +12,8 @@ export async function getNotifications(req: Request, res: Response) {
       .skip((page - 1) * limit)
       .limit(limit)
       .populate('actor', 'username')
-      .populate('post', 'text'),
+      .populate('post', 'text')
+      .populate('comment', 'text'),
     Notification.countDocuments({ recipient: req.userId }),
     Notification.countDocuments({ recipient: req.userId, read: false }),
   ]);
@@ -23,12 +24,16 @@ export async function getNotifications(req: Request, res: Response) {
       notifications: notifications.map((n) => {
         const actor = n.actor as unknown as { _id: Types.ObjectId; username: string };
         const post = n.post as unknown as { _id: Types.ObjectId; text: string } | null;
+        const comment = n.comment as unknown as { _id: Types.ObjectId; text: string } | null;
         return {
           id: n._id.toString(),
           type: n.type,
           actor: { id: actor._id.toString(), username: actor.username },
           post: post
             ? { id: post._id.toString(), text: post.text.slice(0, 80) }
+            : null,
+          comment: comment
+            ? { id: comment._id.toString(), text: comment.text.slice(0, 80) }
             : null,
           commentText: n.commentText ?? null,
           read: n.read,

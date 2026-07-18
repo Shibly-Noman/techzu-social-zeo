@@ -3,12 +3,13 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiErrorMessage } from '../api/client';
 import { useAddComment, useComments } from '../api/hooks';
-import type { Comment } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
+import { applyMention, useMentionSuggestions } from '../hooks/useMentionSuggestions';
 import { radius, spacing, useTheme, useThemedStyles, type Colors } from '../theme';
-import { relativeTime } from '../utils/relativeTime';
 import { Avatar } from './Avatar';
+import { CommentRow, type ReplyTarget } from './CommentRow';
 import { GlassSurface } from './GlassSurface';
+import { MentionAutocomplete } from './MentionAutocomplete';
 
 function createStyles(colors: Colors) {
   return StyleSheet.create({
@@ -26,37 +27,6 @@ function createStyles(colors: Colors) {
       color: colors.textMuted,
       marginBottom: spacing.md,
     },
-    comment: {
-      flexDirection: 'row',
-      gap: spacing.sm,
-      marginBottom: spacing.sm,
-    },
-    commentBody: {
-      flex: 1,
-      minWidth: 0,
-    },
-    bubble: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      alignSelf: 'flex-start',
-    },
-    commentAuthor: {
-      fontSize: 13,
-      fontWeight: '700',
-      color: colors.text,
-    },
-    commentText: {
-      fontSize: 14,
-      color: colors.text,
-      marginTop: 1,
-      lineHeight: 19,
-    },
-    commentTime: {
-      fontSize: 11,
-      color: colors.textMuted,
-      marginTop: 2,
-      marginLeft: spacing.sm,
-    },
     moreButton: {
       alignSelf: 'flex-start',
       marginBottom: spacing.sm,
@@ -71,9 +41,23 @@ function createStyles(colors: Colors) {
       fontSize: 12,
       marginBottom: spacing.sm,
     },
+    replyingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.xs,
+    },
+    replyingText: {
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    replyingUsername: {
+      fontWeight: '700',
+      color: colors.text,
+    },
     composerRow: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
+      alignItems: 'center',
       gap: spacing.sm,
     },
     inputWrap: {
@@ -86,6 +70,8 @@ function createStyles(colors: Colors) {
       paddingVertical: spacing.sm,
       fontSize: 14,
       color: colors.text,
+      borderWidth: 0,
+      outlineWidth: 0,
     },
     sendButton: {
       width: 36,
@@ -101,22 +87,6 @@ function createStyles(colors: Colors) {
   });
 }
 
-function CommentRow({ comment }: { comment: Comment }) {
-  const styles = useThemedStyles(createStyles);
-  return (
-    <View style={styles.comment}>
-      <Avatar username={comment.author.username} size={30} />
-      <View style={styles.commentBody}>
-        <GlassSurface style={styles.bubble} radius={radius.lg}>
-          <Text style={styles.commentAuthor}>@{comment.author.username}</Text>
-          <Text style={styles.commentText}>{comment.text}</Text>
-        </GlassSurface>
-        <Text style={styles.commentTime}>{relativeTime(comment.createdAt)}</Text>
-      </View>
-    </View>
-  );
-}
-
 /** Inline, non-navigating comment thread — expands in place under a post. */
 export function PostComments({ postId }: { postId: string }) {
   const { user } = useAuth();
@@ -126,16 +96,30 @@ export function PostComments({ postId }: { postId: string }) {
   const addComment = useAddComment(postId);
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
 
+  const mention = useMentionSuggestions(text);
   const comments = commentsQuery.data?.pages.flatMap((page) => page.comments) ?? [];
+
+  function handleReply(target: ReplyTarget) {
+    setError(null);
+    setReplyTarget(target);
+    setText(user?.username === target.username ? '' : `@${target.username} `);
+  }
+
+  function cancelReply() {
+    setReplyTarget(null);
+    setText('');
+  }
 
   async function handleSend() {
     const trimmed = text.trim();
     if (!trimmed || addComment.isPending) return;
     setError(null);
     try {
-      await addComment.mutateAsync(trimmed);
+      await addComment.mutateAsync({ text: trimmed, parentCommentId: replyTarget?.commentId });
       setText('');
+      setReplyTarget(null);
     } catch (err) {
       setError(apiErrorMessage(err));
     }
@@ -148,7 +132,9 @@ export function PostComments({ postId }: { postId: string }) {
       ) : comments.length === 0 ? (
         <Text style={styles.empty}>No comments yet — be the first to reply.</Text>
       ) : (
-        comments.map((comment) => <CommentRow key={comment.id} comment={comment} />)
+        comments.map((comment) => (
+          <CommentRow key={comment.id} comment={comment} onReply={handleReply} />
+        ))
       )}
 
       {commentsQuery.hasNextPage ? (
@@ -168,6 +154,17 @@ export function PostComments({ postId }: { postId: string }) {
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
+      {replyTarget ? (
+        <View style={styles.replyingRow}>
+          <Text style={styles.replyingText}>
+            Replying to <Text style={styles.replyingUsername}>@{replyTarget.username}</Text>
+          </Text>
+          <Pressable onPress={cancelReply} hitSlop={8} accessibilityRole="button" accessibilityLabel="Cancel reply">
+            <Ionicons name="close" size={16} color={colors.textMuted} />
+          </Pressable>
+        </View>
+      ) : null}
+
       <View style={styles.composerRow}>
         <Avatar username={user?.username ?? ''} size={30} />
         <GlassSurface style={styles.inputWrap} radius={radius.full}>
@@ -175,7 +172,7 @@ export function PostComments({ postId }: { postId: string }) {
             style={styles.composerInput}
             value={text}
             onChangeText={setText}
-            placeholder="Write a comment…"
+            placeholder={replyTarget ? `Reply to @${replyTarget.username}…` : 'Write a comment…'}
             placeholderTextColor={colors.textMuted}
             maxLength={300}
             multiline
@@ -199,6 +196,12 @@ export function PostComments({ postId }: { postId: string }) {
           )}
         </Pressable>
       </View>
+      {mention.active ? (
+        <MentionAutocomplete
+          users={mention.suggestions}
+          onSelect={(username) => setText((t) => applyMention(t, username))}
+        />
+      ) : null}
     </View>
   );
 }

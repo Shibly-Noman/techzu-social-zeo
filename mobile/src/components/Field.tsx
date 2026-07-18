@@ -35,6 +35,7 @@ function createStyles(colors: Colors) {
       fontSize: 16,
       color: colors.text,
       backgroundColor: colors.card,
+      outlineWidth: 0,
     },
     inputWithToggle: {
       paddingRight: 48,

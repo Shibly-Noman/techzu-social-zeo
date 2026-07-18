@@ -12,6 +12,9 @@ import type {
   FeedPage,
   NotificationsPage,
   Post,
+  RepliesPage,
+  UserProfile,
+  UserSummary,
 } from './types';
 
 const PAGE_SIZE = 10;
@@ -41,6 +44,8 @@ export function useCreatePost() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['userPosts'] });
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
     },
   });
 }
@@ -129,24 +134,147 @@ export function useComments(postId: string) {
   });
 }
 
+export function useReplies(commentId: string) {
+  return useInfiniteQuery({
+    queryKey: ['replies', commentId],
+    queryFn: async ({ pageParam }) => {
+      const { data } = await api.get(`/api/comments/${commentId}/replies`, {
+        params: { page: pageParam, limit: 20 },
+      });
+      return data.data as RepliesPage;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+  });
+}
+
 export function useAddComment(postId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (text: string) => {
-      const { data } = await api.post(`/api/posts/${postId}/comment`, { text });
+    mutationFn: async ({ text, parentCommentId }: { text: string; parentCommentId?: string }) => {
+      const { data } = await api.post(`/api/posts/${postId}/comment`, { text, parentCommentId });
       return data.data.comment as Comment;
     },
-    onSuccess: () => {
+    onSuccess: (comment) => {
       queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+      if (comment.parentId) {
+        queryClient.invalidateQueries({ queryKey: ['replies', comment.parentId] });
+      }
       queryClient.invalidateQueries({ queryKey: ['post', postId] });
       queryClient.invalidateQueries({ queryKey: ['feed'] });
     },
   });
 }
 
+// ── Comment reactions (optimistic toggle across comment + reply caches) ─
+
+function toggleCommentLikeInList(comments: Comment[], commentId: string): Comment[] {
+  return comments.map((c) =>
+    c.id === commentId
+      ? { ...c, likedByMe: !c.likedByMe, likeCount: c.likeCount + (c.likedByMe ? -1 : 1) }
+      : c
+  );
+}
+
+export function useToggleCommentLike() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (commentId: string) => {
+      const { data } = await api.post(`/api/comments/${commentId}/like`);
+      return data.data as { liked: boolean; likeCount: number };
+    },
+    onMutate: async (commentId) => {
+      await queryClient.cancelQueries({ queryKey: ['comments'] });
+      await queryClient.cancelQueries({ queryKey: ['replies'] });
+
+      const commentSnapshots = queryClient.getQueriesData<InfiniteData<CommentsPage>>({
+        queryKey: ['comments'],
+      });
+      for (const [key, data] of commentSnapshots) {
+        if (!data) continue;
+        queryClient.setQueryData<InfiniteData<CommentsPage>>(key, {
+          ...data,
+          pages: data.pages.map((page) => ({
+            ...page,
+            comments: toggleCommentLikeInList(page.comments, commentId),
+          })),
+        });
+      }
+
+      const replySnapshots = queryClient.getQueriesData<InfiniteData<RepliesPage>>({
+        queryKey: ['replies'],
+      });
+      for (const [key, data] of replySnapshots) {
+        if (!data) continue;
+        queryClient.setQueryData<InfiniteData<RepliesPage>>(key, {
+          ...data,
+          pages: data.pages.map((page) => ({
+            ...page,
+            replies: toggleCommentLikeInList(page.replies, commentId),
+          })),
+        });
+      }
+
+      return { commentSnapshots, replySnapshots };
+    },
+    onError: (_err, _commentId, context) => {
+      for (const [key, data] of context?.commentSnapshots ?? []) {
+        queryClient.setQueryData(key, data);
+      }
+      for (const [key, data] of context?.replySnapshots ?? []) {
+        queryClient.setQueryData(key, data);
+      }
+    },
+  });
+}
+
+// ── Profile ───────────────────────────────────────────────────────────
+
+export function useUserProfile(username: string) {
+  return useQuery({
+    queryKey: ['userProfile', username],
+    queryFn: async () => {
+      const { data } = await api.get(`/api/users/${username}`);
+      return data.data.user as UserProfile;
+    },
+    enabled: username.length > 0,
+  });
+}
+
+/** Exact-match post list for a profile page — distinct cache key from the
+ * search box's prefix-match `useFeed` so the two never collide. */
+export function useUserPosts(username: string) {
+  return useInfiniteQuery({
+    queryKey: ['userPosts', username],
+    queryFn: async ({ pageParam }) => {
+      const { data } = await api.get('/api/posts', {
+        params: { page: pageParam, limit: PAGE_SIZE, username, exact: true },
+      });
+      return data.data as FeedPage;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    enabled: username.length > 0,
+  });
+}
+
+// ── Mention autocomplete ────────────────────────────────────────────────
+
+export function useSearchUsers(query: string) {
+  return useQuery({
+    queryKey: ['userSearch', query],
+    queryFn: async () => {
+      const { data } = await api.get('/api/users/search', { params: { q: query } });
+      return data.data.users as UserSummary[];
+    },
+    enabled: query.length > 0,
+    staleTime: 30000,
+  });
+}
+
 // ── Notifications ─────────────────────────────────────────────────────
 
-export function useNotifications() {
+export function useNotifications(enabled = true) {
   return useInfiniteQuery({
     queryKey: ['notifications'],
     queryFn: async ({ pageParam }) => {
@@ -158,6 +286,7 @@ export function useNotifications() {
     initialPageParam: 1,
     getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
     refetchInterval: 30000,
+    enabled,
   });
 }
 

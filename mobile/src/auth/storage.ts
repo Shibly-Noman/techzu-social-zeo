@@ -31,7 +31,5 @@ export const STORAGE_KEYS = {
   fcmToken: 'push.fcmToken',
   themeMode: 'prefs.mode',
   accentId: 'prefs.accentId',
-  backgroundStyle: 'prefs.backgroundStyle',
-  reduceMotion: 'prefs.reduceMotion',
   glassEnabled: 'prefs.glassEnabled',
 } as const;

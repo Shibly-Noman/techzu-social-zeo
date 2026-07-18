@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,15 +12,18 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiErrorMessage } from '../../../src/api/client';
 import { useFeed, useToggleLike } from '../../../src/api/hooks';
 import { useAuth } from '../../../src/auth/AuthContext';
 import { GlassSurface } from '../../../src/components/GlassSurface';
 import { PostCard } from '../../../src/components/PostCard';
+import { PostComposer } from '../../../src/components/PostComposer';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
 import { SkeletonFeed } from '../../../src/components/SkeletonPostCard';
 import { EmptyState, ErrorView } from '../../../src/components/StatusViews';
+import { useDebouncedValue } from '../../../src/hooks/useDebouncedValue';
 import {
   radius,
   spacing,
@@ -70,6 +73,7 @@ function createStyles(colors: Colors) {
       gap: spacing.sm,
       paddingHorizontal: spacing.md,
       marginHorizontal: spacing.xl,
+      marginTop: spacing.md,
       marginBottom: spacing.md,
       minHeight: 44,
     },
@@ -78,6 +82,8 @@ function createStyles(colors: Colors) {
       fontSize: 15,
       color: colors.text,
       paddingVertical: spacing.sm,
+      borderWidth: 0,
+      outlineWidth: 0,
     },
     list: {
       paddingHorizontal: spacing.xl,
@@ -91,17 +97,13 @@ function createStyles(colors: Colors) {
 }
 
 export default function FeedScreen() {
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const tabBarPadding = useTabBarBottomPadding();
   const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-
-  useEffect(() => {
-    const handle = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 400);
-    return () => clearTimeout(handle);
-  }, [search]);
+  const debouncedSearch = useDebouncedValue(search.trim().toLowerCase(), 400);
 
   const feed = useFeed(debouncedSearch);
   const toggleLike = useToggleLike();
@@ -143,6 +145,8 @@ export default function FeedScreen() {
           </View>
         </GlassSurface>
 
+        <PostComposer />
+
         <GlassSurface style={styles.searchBox} radius={radius.md}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
@@ -174,12 +178,15 @@ export default function FeedScreen() {
           <FlatList
             data={posts}
             keyExtractor={(post) => post.id}
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.list, { paddingBottom: tabBarPadding }]}
             renderItem={({ item }) => (
               <PostCard
                 post={item}
                 onToggleLike={(id) => toggleLike.mutate(id)}
-                onPressAuthor={(username) => setSearch(username)}
+                onPressAuthor={(username) =>
+                  router.push({ pathname: '/(app)/profile/[username]', params: { username } })
+                }
               />
             )}
             refreshControl={
@@ -203,7 +210,7 @@ export default function FeedScreen() {
                 subtitle={
                   debouncedSearch
                     ? 'Try a different username.'
-                    : 'Be the first — tap Post to share something!'
+                    : 'Be the first to share something!'
                 }
               />
             }

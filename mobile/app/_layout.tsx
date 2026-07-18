@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '../src/auth/AuthContext';
-import { AnimatedBackground } from '../src/components/AnimatedBackground';
+import { NotificationToastWatcher } from '../src/components/NotificationToastWatcher';
 import { SPLASH_DURATION_MS, SplashAnimation } from '../src/components/SplashAnimation';
 import { ToastProvider } from '../src/components/Toast';
 import { ThemeProvider, useTheme } from '../src/theme';
@@ -32,6 +32,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <ToastProvider>
+              <NotificationToastWatcher />
               <AppShell />
             </ToastProvider>
           </AuthProvider>
@@ -43,7 +44,7 @@ export default function RootLayout() {
 
 /** Lives inside ThemeProvider so the stack background and splash can read the active theme. */
 function AppShell() {
-  const { resolvedScheme } = useTheme();
+  const { colors, resolvedScheme } = useTheme();
   const [splashVisible, setSplashVisible] = useState(true);
   const splashOpacity = useRef(new Animated.Value(1)).current;
 
@@ -66,11 +67,10 @@ function AppShell() {
     <>
       {/* Edge-to-edge: status bar icon color follows the resolved theme. */}
       <StatusBar style={resolvedScheme === 'dark' ? 'light' : 'dark'} />
-      <AnimatedBackground />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: 'transparent' },
+          contentStyle: { backgroundColor: colors.background },
         }}
       />
       {splashVisible ? (

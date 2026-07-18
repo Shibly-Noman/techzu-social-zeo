@@ -7,11 +7,17 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Animated, Platform, StyleSheet, Text } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, Text } from 'react-native';
 import { radius, spacing, useThemedStyles, type Colors } from '../theme';
 
+interface ToastOptions {
+  icon?: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  onPress?: () => void;
+}
+
 interface ToastContextValue {
-  show: (message: string) => void;
+  show: (message: string, options?: ToastOptions) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -25,18 +31,20 @@ function createStyles(colors: Colors) {
       position: 'absolute',
       bottom: 96,
       alignSelf: 'center',
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
       backgroundColor: '#1E293B',
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
       borderRadius: radius.full,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.2,
       shadowRadius: 12,
       elevation: 6,
+    },
+    pressable: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
     },
     text: {
       color: colors.white,
@@ -49,15 +57,15 @@ function createStyles(colors: Colors) {
 /** Lightweight success toast rendered above the tab bar. */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const styles = useThemedStyles(createStyles);
-  const [message, setMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; options: ToastOptions } | null>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(16)).current;
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const show = useCallback(
-    (msg: string) => {
+    (message: string, options: ToastOptions = {}) => {
       if (hideTimer.current) clearTimeout(hideTimer.current);
-      setMessage(msg);
+      setToast({ message, options });
       Animated.parallel([
         Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: useNative }),
         Animated.spring(translateY, { toValue: 0, speed: 20, useNativeDriver: useNative }),
@@ -66,7 +74,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         Animated.parallel([
           Animated.timing(opacity, { toValue: 0, duration: 220, useNativeDriver: useNative }),
           Animated.timing(translateY, { toValue: 16, duration: 220, useNativeDriver: useNative }),
-        ]).start(() => setMessage(null));
+        ]).start(() => setToast(null));
       }, VISIBLE_MS);
     },
     [opacity, translateY]
@@ -77,13 +85,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {message ? (
+      {toast ? (
         <Animated.View
-          pointerEvents="none"
+          pointerEvents={toast.options.onPress ? 'box-none' : 'none'}
           style={[styles.toast, { opacity, transform: [{ translateY }] }]}
         >
-          <Ionicons name="checkmark-circle" size={20} color="#4ADE80" />
-          <Text style={styles.text}>{message}</Text>
+          <Pressable style={styles.pressable} onPress={toast.options.onPress}>
+            <Ionicons
+              name={toast.options.icon ?? 'checkmark-circle'}
+              size={20}
+              color={toast.options.iconColor ?? '#4ADE80'}
+            />
+            <Text style={styles.text}>{toast.message}</Text>
+          </Pressable>
         </Animated.View>
       ) : null}
     </ToastContext.Provider>

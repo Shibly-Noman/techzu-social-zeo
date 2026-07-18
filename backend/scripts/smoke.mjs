@@ -210,6 +210,130 @@ let postId;
   check('missing token body → 400', bad.status === 400);
 }
 
+// ── Comment reactions & replies ────────────────────────────────────
+let topCommentId, replyId;
+{
+  const list = await api('GET', `/api/posts/${postId}/comments`, { token: aliceToken });
+  const bobComment = (list.json?.data?.comments ?? []).find((c) => c.author.username === bob.username);
+  topCommentId = bobComment?.id;
+  check(
+    'top-level comment has reaction/reply fields',
+    typeof bobComment?.likeCount === 'number' &&
+      typeof bobComment?.likedByMe === 'boolean' &&
+      typeof bobComment?.replyCount === 'number' &&
+      bobComment?.parentId === null
+  );
+
+  const like = await api('POST', `/api/comments/${topCommentId}/like`, { token: aliceToken });
+  check('comment like → liked:true, likeCount:1', like.status === 200 && like.json?.data?.liked === true && like.json?.data?.likeCount === 1);
+
+  const unlike = await api('POST', `/api/comments/${topCommentId}/like`, { token: aliceToken });
+  check('comment like toggles off', unlike.json?.data?.liked === false && unlike.json?.data?.likeCount === 0);
+
+  await api('POST', `/api/comments/${topCommentId}/like`, { token: aliceToken }); // re-like, for the notification check below
+
+  const badComment = await api('POST', '/api/comments/64b000000000000000000000/like', { token: aliceToken });
+  check('like nonexistent comment → 404', badComment.status === 404);
+
+  const reply = await api('POST', `/api/posts/${postId}/comment`, {
+    token: aliceToken,
+    body: { text: `@${bob.username} thanks for the reply!`, parentCommentId: topCommentId },
+  });
+  check('reply → 201 with parentId set', reply.status === 201 && reply.json?.data?.comment?.parentId === topCommentId);
+  replyId = reply.json?.data?.comment?.id;
+
+  const replyToReply = await api('POST', `/api/posts/${postId}/comment`, {
+    token: bobToken,
+    body: { text: 'nested reply', parentCommentId: replyId },
+  });
+  check('replying to a reply → 400 (depth limit)', replyToReply.status === 400);
+
+  const repliesList = await api('GET', `/api/comments/${topCommentId}/replies`, { token: bobToken });
+  check(
+    'getReplies returns the reply',
+    repliesList.status === 200 && repliesList.json?.data?.replies?.length === 1 && repliesList.json?.data?.replies[0]?.id === replyId
+  );
+
+  const parentAfter = await api('GET', `/api/posts/${postId}/comments`, { token: bobToken });
+  const parentComment = (parentAfter.json?.data?.comments ?? []).find((c) => c.id === topCommentId);
+  check('parent replyCount incremented', parentComment?.replyCount === 1);
+
+  const badParent = await api('POST', `/api/posts/${postId}/comment`, {
+    token: bobToken,
+    body: { text: 'x', parentCommentId: '64b000000000000000000000' },
+  });
+  check('reply to nonexistent comment → 404', badParent.status === 404);
+}
+
+// ── Mentions ────────────────────────────────────────────────────────
+{
+  // Uppercase @mention must still resolve — usernames are stored lowercase.
+  const mentionCase = await api('POST', `/api/posts/${postId}/comment`, {
+    token: bobToken,
+    body: { text: `Hi @${alice.username.toUpperCase()}!` },
+  });
+  check('comment with uppercase mention → 201', mentionCase.status === 201);
+
+  await new Promise((r) => setTimeout(r, 500)); // notifications are fire-and-forget
+
+  const bobNotifs = await api('GET', '/api/notifications', { token: bobToken });
+  const bobTypes = (bobNotifs.json?.data?.notifications ?? []).map((i) => i.type);
+  check('bob got a comment_like notification', bobTypes.includes('comment_like'));
+  check('bob got a reply notification', bobTypes.includes('reply'));
+  const replyNotif = (bobNotifs.json?.data?.notifications ?? []).find((i) => i.type === 'reply');
+  check('reply notification has populated comment text', typeof replyNotif?.comment?.text === 'string' && replyNotif.comment.text.length > 0);
+  check('bob got a mention notification', bobTypes.includes('mention'));
+
+  const aliceNotifs = await api('GET', '/api/notifications', { token: aliceToken });
+  const aliceTypes = (aliceNotifs.json?.data?.notifications ?? []).map((i) => i.type);
+  check('alice got a mention notification despite uppercase @mention', aliceTypes.includes('mention'));
+}
+
+// ── User search (mention autocomplete) ────────────────────────────
+{
+  const search = await api('GET', `/api/users/search?q=${alice.username.slice(0, 4)}`, { token: bobToken });
+  const found = search.json?.data?.users ?? [];
+  check('user search finds alice by prefix', search.status === 200 && found.some((u) => u.username === alice.username));
+
+  const noAuth = await api('GET', `/api/users/search?q=al`);
+  check('user search without token → 401', noAuth.status === 401);
+
+  const emptyQuery = await api('GET', '/api/users/search?q=', { token: bobToken });
+  check('empty search query → 400', emptyQuery.status === 400);
+}
+
+// ── User profile ───────────────────────────────────────────────────
+{
+  const profile = await api('GET', `/api/users/${alice.username}`, { token: bobToken });
+  check(
+    'profile returns username, createdAt, postCount',
+    profile.status === 200 &&
+      profile.json?.data?.user?.username === alice.username &&
+      typeof profile.json?.data?.user?.createdAt === 'string' &&
+      profile.json?.data?.user?.postCount >= 1
+  );
+  check('profile does not leak email/passwordHash', profile.json?.data?.user?.email === undefined && profile.json?.data?.user?.passwordHash === undefined);
+
+  const upper = await api('GET', `/api/users/${alice.username.toUpperCase()}`, { token: bobToken });
+  check('profile lookup is case-insensitive', upper.status === 200 && upper.json?.data?.user?.username === alice.username);
+
+  const missing = await api('GET', '/api/users/nosuchuser_zzz', { token: bobToken });
+  check('unknown username → 404', missing.status === 404);
+
+  const noAuth = await api('GET', `/api/users/${alice.username}`);
+  check('profile without token → 401', noAuth.status === 401);
+
+  const tooShort = await api('GET', '/api/users/xy', { token: bobToken });
+  check('username under 3 chars → 400', tooShort.status === 400);
+
+  const exact = await api('GET', `/api/posts?username=${alice.username}&exact=true`, { token: bobToken });
+  const exactPosts = exact.json?.data?.posts ?? [];
+  check('exact=true returns only that user’s posts', exact.status === 200 && exactPosts.every((p) => p.author.username === alice.username));
+
+  const noPartialMatch = await api('GET', `/api/posts?username=${alice.username.slice(0, 3)}&exact=true`, { token: bobToken });
+  check('exact=true rejects a partial username', noPartialMatch.json?.data?.posts?.length === 0);
+}
+
 // ── Misc ────────────────────────────────────────────────────────────
 {
   const r = await api('GET', '/api/nope');

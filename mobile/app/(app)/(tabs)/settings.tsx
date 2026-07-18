@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { GlassSurface } from '../../../src/components/GlassSurface';
@@ -11,7 +12,6 @@ import {
   useTabBarBottomPadding,
   useTheme,
   useThemedStyles,
-  type BackgroundStyle,
   type Colors,
   type ThemeMode,
 } from '../../../src/theme';
@@ -22,23 +22,13 @@ const MODE_OPTIONS: { id: ThemeMode; label: string; icon: keyof typeof Ionicons.
   { id: 'system', label: 'System', icon: 'phone-portrait-outline' },
 ];
 
-const BACKGROUND_OPTIONS: {
-  id: BackgroundStyle;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  description: string;
-}[] = [
-  { id: 'aurora', label: 'Aurora', icon: 'color-wand-outline', description: 'Drifting gradient blobs' },
-  { id: 'particles', label: 'Particles', icon: 'ellipse-outline', description: 'Floating dots' },
-  { id: 'waves', label: 'Waves', icon: 'water-outline', description: 'Flowing gradient bands' },
-  { id: 'fireflies', label: 'Fireflies', icon: 'sparkles-outline', description: 'Glowing dots, faintly connected' },
-  { id: 'solid', label: 'Solid', icon: 'square-outline', description: 'Plain background, no animation' },
-];
-
 function createStyles(colors: Colors) {
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: 'transparent' },
     header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.md,
       paddingBottom: spacing.sm,
@@ -103,46 +93,10 @@ function createStyles(colors: Colors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    backgroundOption: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.md,
-      padding: spacing.md,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      marginBottom: spacing.sm,
-    },
-    backgroundOptionActive: {
-      backgroundColor: colors.primarySoft,
-      borderColor: colors.primary,
-    },
-    backgroundIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: colors.background,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    backgroundBody: {
-      flex: 1,
-    },
-    backgroundLabel: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: colors.text,
-    },
-    backgroundDescription: {
-      fontSize: 13,
-      color: colors.textMuted,
-      marginTop: 1,
-    },
     switchRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: spacing.sm,
     },
     switchLabelWrap: {
       flex: 1,
@@ -158,11 +112,6 @@ function createStyles(colors: Colors) {
       color: colors.textMuted,
       marginTop: 1,
     },
-    divider: {
-      height: 1,
-      backgroundColor: colors.border,
-      marginVertical: spacing.sm,
-    },
   });
 }
 
@@ -177,19 +126,9 @@ function SectionCard({ title, children }: { title: string; children: React.React
 }
 
 export default function SettingsScreen() {
-  const {
-    colors,
-    mode,
-    setMode,
-    accentId,
-    setAccentId,
-    backgroundStyle,
-    setBackgroundStyle,
-    reduceMotion,
-    setReduceMotion,
-    glassEnabled,
-    setGlassEnabled,
-  } = useTheme();
+  const router = useRouter();
+  const { colors, mode, setMode, accentId, setAccentId, glassEnabled, setGlassEnabled } =
+    useTheme();
   const styles = useThemedStyles(createStyles);
   const tabBarPadding = useTabBarBottomPadding();
 
@@ -197,6 +136,15 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenContainer>
         <GlassSurface style={styles.header} radius={0}>
+          <Pressable
+            onPress={() => router.replace('/(app)/(tabs)')}
+            hitSlop={8}
+            android_ripple={{ color: colors.ripple, borderless: true, radius: 22 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back to feed"
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </Pressable>
           <Text style={styles.headerTitle}>Settings</Text>
         </GlassSurface>
 
@@ -246,50 +194,7 @@ export default function SettingsScreen() {
             </View>
           </SectionCard>
 
-          <SectionCard title="Background">
-            {BACKGROUND_OPTIONS.map((option) => {
-              const active = backgroundStyle === option.id;
-              return (
-                <Pressable
-                  key={option.id}
-                  onPress={() => setBackgroundStyle(option.id)}
-                  style={[styles.backgroundOption, active && styles.backgroundOptionActive]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${option.label} background`}
-                >
-                  <View style={styles.backgroundIcon}>
-                    <Ionicons
-                      name={option.icon}
-                      size={20}
-                      color={active ? colors.primary : colors.textMuted}
-                    />
-                  </View>
-                  <View style={styles.backgroundBody}>
-                    <Text style={styles.backgroundLabel}>{option.label}</Text>
-                    <Text style={styles.backgroundDescription}>{option.description}</Text>
-                  </View>
-                  {active ? (
-                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </SectionCard>
-
-          <SectionCard title="Motion & effects">
-            <View style={styles.switchRow}>
-              <View style={styles.switchLabelWrap}>
-                <Text style={styles.switchLabel}>Reduce motion</Text>
-                <Text style={styles.switchHint}>Turns off the background animation</Text>
-              </View>
-              <Switch
-                value={reduceMotion}
-                onValueChange={setReduceMotion}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-            <View style={styles.divider} />
+          <SectionCard title="Effects">
             <View style={styles.switchRow}>
               <View style={styles.switchLabelWrap}>
                 <Text style={styles.switchLabel}>Liquid glass effect</Text>

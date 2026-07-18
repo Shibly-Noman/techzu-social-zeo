@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Post } from '../api/types';
+import { useTextTruncation } from '../hooks/useTextTruncation';
 import { radius, spacing, useTheme, useThemedStyles, type Colors } from '../theme';
 import { relativeTime } from '../utils/relativeTime';
 import { Avatar } from './Avatar';
@@ -21,6 +22,9 @@ interface Props {
 }
 
 const useNative = Platform.OS !== 'web';
+
+/** Post text collapses to this many lines before offering "See more", Facebook-style. */
+const MAX_TEXT_LINES = 2;
 
 function createStyles(colors: Colors) {
   return StyleSheet.create({
@@ -59,6 +63,19 @@ function createStyles(colors: Colors) {
       lineHeight: 23,
       color: colors.text,
     },
+    measureText: {
+      position: 'absolute',
+      opacity: 0,
+      left: 0,
+      right: 0,
+      pointerEvents: 'none',
+    },
+    seeMore: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.textMuted,
+      marginTop: spacing.xs,
+    },
     actions: {
       flexDirection: 'row',
       marginTop: spacing.lg,
@@ -91,6 +108,16 @@ export const PostCard = React.memo(function PostCard({
   const styles = useThemedStyles(createStyles);
   const heartScale = useRef(new Animated.Value(1)).current;
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const {
+    expanded,
+    setExpanded,
+    canExpand,
+    measured,
+    textRef,
+    handleNativeLayout,
+    isWeb,
+    numberOfLines,
+  } = useTextTruncation(post.text, MAX_TEXT_LINES);
 
   function handleLikePress() {
     Animated.sequence([
@@ -130,7 +157,27 @@ export const PostCard = React.memo(function PostCard({
         </Pressable>
       </View>
 
-      <Text style={styles.text}>{post.text}</Text>
+      <View>
+        {/* Native only: rendered once, invisibly, to measure the post's true line count. */}
+        {!isWeb && !measured ? (
+          <Text style={[styles.text, styles.measureText]} onTextLayout={handleNativeLayout}>
+            {post.text}
+          </Text>
+        ) : null}
+        <Text ref={textRef} style={styles.text} numberOfLines={numberOfLines}>
+          {post.text}
+        </Text>
+        {canExpand ? (
+          <Pressable
+            onPress={() => setExpanded((v) => !v)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={expanded ? 'Show less' : 'Show more'}
+          >
+            <Text style={styles.seeMore}>{expanded ? 'See less' : 'See more'}</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       <View style={styles.actions}>
         <Pressable
