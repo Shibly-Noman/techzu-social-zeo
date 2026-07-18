@@ -19,7 +19,7 @@ No setup required: the APK is pre-configured to use the live backend.
 3. Open **Techzu Social Zeo**, create an account, and when prompted **allow notifications** — this is what enables the FCM push notifications.
 4. The feed comes pre-seeded with demo users and content, so every feature (threads, mentions, comment likes, profiles) is visible immediately.
 
-> ⏱️ **Note:** the API runs on Render's free tier, which sleeps after ~15 minutes of inactivity. The very first request (login/signup) after a quiet period can take up to a minute while the server wakes — subsequent requests are fast.
+> ⏱️ **Note:** the API runs on Render's free tier, which sleeps after ~15 minutes of inactivity. The very first request (login/signup) after a quiet period can take up to 50 seconds while the server wakes from cold start — subsequent requests are fast.
 
 **Trying push notifications with one device:** sign up a second account in a browser at the API level, or simply install the APK on two devices / ask a colleague — when account B likes, comments, replies, or `@mentions` account A, account A's device receives a push even with the app closed. Tapping it deep-links to the post.
 
