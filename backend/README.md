@@ -53,7 +53,7 @@ docker compose up --build
 | `npm run dev` | Dev server with hot reload |
 | `npm run build` / `npm start` | Compile to `dist/` and run |
 | `npm run typecheck` | TypeScript check |
-| `npm run smoke` | 46-check end-to-end API test (`BASE_URL` env to target a deployment) |
+| `npm run smoke` | 72-check end-to-end API test (`BASE_URL` env to target a deployment) |
 
 ## API documentation
 
@@ -111,6 +111,7 @@ Query params:
 | `page` | 1 | 1-based page number |
 | `limit` | 10 | Page size (max 50) |
 | `username` | — | Case-insensitive **prefix** filter on author username |
+| `exact` | `false` | When `true`, `username` must match exactly (used by profile pages) |
 
 Returns newest-first:
 
@@ -145,21 +146,63 @@ Sends an FCM push + records a notification for the post author (not on self-like
 
 #### `POST /api/posts/:id/comment` 🔒
 
-Body: `{ "text": "1–300 chars" }` → `201` with the created comment. Notifies the post author (not on self-comment).
+Body: `{ "text": "1–300 chars", "parentCommentId"?: "…" }` → `201` with the created comment.
+
+- Without `parentCommentId`: a top-level comment. Notifies the post author (not on self-comment).
+- With `parentCommentId`: a **reply** to that top-level comment. Notifies the parent comment's author. Replies are **one level deep only** — replying to a reply returns `400`.
+- Any `@username` mentions in the text notify each mentioned user (case-insensitive, dedup'd), regardless of top-level/reply.
+
+Comment shape (used consistently for top-level comments, replies, and this endpoint's response):
+
+```jsonc
+{
+  "id": "…",
+  "text": "…",
+  "author": { "id": "…", "username": "bob" },
+  "postId": "…",
+  "parentId": null,           // set for replies
+  "likeCount": 0,
+  "likedByMe": false,
+  "replyCount": 0,
+  "createdAt": "2026-07-16T10:00:00.000Z"
+}
+```
 
 #### `GET /api/posts/:id/comments` 🔒
 
-Paginated (`page`, `limit`), oldest-first. Same pagination envelope as the feed.
+Paginated (`page`, `limit`), oldest-first, **top-level comments only**. Same pagination envelope as the feed.
+
+### Comments
+
+#### `POST /api/comments/:commentId/like` 🔒
+
+**Toggles** like state on a comment (top-level or reply). Returns `{ liked: boolean, likeCount: number }`. Notifies the comment author (not on self-like; re-liking doesn't re-notify).
+
+#### `GET /api/comments/:commentId/replies` 🔒
+
+Paginated (`page`, `limit`), oldest-first, replies to the given top-level comment.
 
 ### Notifications
 
 #### `GET /api/notifications` 🔒
 
-Paginated, newest-first. Each item: `{ id, type: "like"|"comment", actor, post: { id, text (snippet) }, commentText, read, createdAt }`. Response also includes `unreadCount`.
+Paginated, newest-first. Each item: `{ id, type: "like"|"comment"|"comment_like"|"reply"|"mention", actor, post: { id, text (snippet) }, commentText, read, createdAt }`. Response also includes `unreadCount`.
 
 #### `POST /api/notifications/mark-read` 🔒
 
 Marks all of the caller's notifications as read.
+
+### Users
+
+#### `GET /api/users/search?q=` 🔒
+
+Username-prefix search (case-insensitive, max 8 results) — powers @mention autocomplete. Returns `{ users: [{ id, username }] }`.
+
+#### `GET /api/users/:username` 🔒
+
+Public profile lookup (case-insensitive). Returns `{ user: { id, username, createdAt, postCount } }`. `404` if the username doesn't exist.
+
+> Combine with `GET /api/posts?username=<name>&exact=true` to list exactly that user's posts (the plain `username` filter is a prefix match; `exact=true` requires an exact match, used by profile pages).
 
 ### Device tokens
 
@@ -178,9 +221,9 @@ Body: `{ "token": "…" }`. Detaches the device (call on logout).
 ## Push notification flow
 
 1. App obtains a native FCM device token (`expo-notifications`) and registers it via `PUT /api/users/me/fcm-token`.
-2. When a post is liked or commented on, the API records a `Notification` document and sends an FCM HTTP v1 message (`firebase-admin`) to **all** of the author's registered devices — fire-and-forget, so push failures never fail the API request.
+2. An interaction happening — post like, top-level comment, comment like, reply, or `@mention` — records a `Notification` document (type `like` / `comment` / `comment_like` / `reply` / `mention`) and sends an FCM HTTP v1 message (`firebase-admin`) to **all** of the recipient's registered devices — fire-and-forget, so push failures never fail the API request.
 3. Tokens rejected by FCM as unregistered/invalid are pruned automatically.
-4. Self-interactions are never notified; un-liking and re-liking doesn't notify twice.
+4. Self-interactions are never notified (including mentioning yourself); un-liking and re-liking doesn't notify twice.
 
 ## Project structure
 
@@ -191,11 +234,11 @@ src/
 ├── config/env.ts       zod-validated environment
 ├── schemas.ts          zod request schemas
 ├── models/             User, Post, Comment, Notification (Mongoose)
-├── routes/             route definitions per resource
+├── routes/             route definitions per resource (posts, comments, users, notifications, auth)
 ├── controllers/        request handlers
 ├── middleware/         requireAuth (JWT), validate (zod), errorHandler
-├── services/           fcm.service (firebase-admin), notification.service
-└── utils/apiError.ts   typed operational errors
+├── services/           fcm.service (firebase-admin), notification.service (interactions + @mention parsing)
+└── utils/              apiError, serializers (shared comment shape), regex helpers
 ```
 
 ## Deployment (Render)

@@ -4,30 +4,37 @@ React Native app built with **Expo (SDK 57), TypeScript, expo-router, TanStack Q
 
 ## Features
 
-- Login / signup with inline validation
-- Feed: infinite scroll, pull-to-refresh, newest first
+- Onboarding/welcome screen, login / signup with inline validation
+- Feed: infinite scroll, pull-to-refresh, newest first, inline post composer
 - Filter feed by username (server-side prefix search; tap any author to filter)
-- Like/unlike with optimistic UI, comments with live counts
-- Activity screen: past like/comment notifications with unread badge
+- Like/unlike posts with optimistic UI and a spring-bounce heart animation
+- Inline comment threads: comment, reply (one level deep), like a comment
+- `@mention` autocomplete while typing a comment, mentions rendered as links
+- Public profile screens (`/profile/[username]`) — join date, post count, their posts
+- Activity screen: like/comment/reply/mention notifications with unread badge, plus in-app toast on new activity
 - FCM push notifications; tapping one deep-links to the post
+- Light / dark / system theme, switchable from Settings
 - Tablet-friendly: content column caps at 640 px and centers on wide screens
 
 ## Project structure
 
 ```
 app/                        expo-router routes
-├── _layout.tsx             providers (React Query, Auth) + root stack
-├── index.tsx               entry redirect (session → feed, else login)
-├── (auth)/                 login & signup screens
-└── (app)/                  authenticated area (guard + push registration)
-    ├── (tabs)/             Feed · Create · Activity
-    └── post/[id].tsx       post detail + comments
+├── _layout.tsx              providers (React Query, Auth, Toast) + root stack
+├── index.tsx                entry redirect (session → feed, else welcome)
+├── (auth)/                  welcome, login, signup
+└── (app)/                   authenticated area (guard + push registration)
+    ├── (tabs)/               Feed · Activity · Settings
+    ├── post/[id].tsx         post detail + comments
+    └── profile/[username].tsx  public profile + their posts
 src/
-├── api/                    axios client, React Query hooks, types
-├── auth/                   AuthContext + secure token storage
-├── components/             PostCard, Avatar, Button, Field, states…
-├── notifications/push.ts   FCM token registration + tap handling
-└── theme.ts                colors, spacing, layout constants
+├── api/                     axios client, React Query hooks, types
+├── auth/                    AuthContext + secure token storage
+├── components/              PostCard, PostComments, PostComposer, MentionAutocomplete,
+│                             Avatar, GlassSurface, Toast, skeleton/status states…
+├── hooks/                   useMentionSuggestions, useTextTruncation, useDebouncedValue
+├── notifications/push.ts    FCM token registration + tap handling
+└── theme/                   ThemeContext (light/dark/system), palettes, shared style hooks
 ```
 
 ## Running in development

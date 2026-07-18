@@ -5,7 +5,7 @@ A lightweight social media application where users can post text updates, browse
 > **Deliverable links**
 >
 > - **APK download:** _(Google Drive link — added on release)_
-> - **Live API:** _(Render URL — added on deploy)_
+> - **Live API:** [https://techzu-social-zeo.onrender.com](https://techzu-social-zeo.onrender.com)
 
 ## Repository structure
 
@@ -27,9 +27,12 @@ A lightweight social media application where users can post text updates, browse
 - Shared feed — paginated, newest first, infinite scroll, pull-to-refresh
 - Filter feed by username (server-side search)
 - Like / unlike posts (optimistic UI)
-- Comment on posts
-- Push notifications via FCM when someone likes or comments on your post
+- Comment on posts, reply to comments (one level deep), like comments
+- `@mention` a user in a comment with autocomplete
+- User profiles (username, join date, post count) and username search
+- Push notifications via FCM for likes, comments, replies, comment likes, and mentions
 - In-app notifications screen with unread badge
+- Light / dark / system theme
 - Tablet-responsive layouts
 
 ## Quick start
