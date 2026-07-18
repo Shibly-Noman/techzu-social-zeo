@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -13,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiErrorMessage } from '../../../src/api/client';
 import { useFeed, useToggleLike } from '../../../src/api/hooks';
 import { useAuth } from '../../../src/auth/AuthContext';
@@ -67,23 +68,59 @@ function createStyles(colors: Colors) {
       color: colors.textMuted,
       flexShrink: 1,
     },
-    searchBox: {
+    userTrigger: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      flexShrink: 1,
+      minWidth: 0,
+    },
+    searchInline: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minWidth: 0,
+    },
+    searchInlineInput: {
+      flex: 1,
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      padding: 0,
+      borderWidth: 0,
+      outlineWidth: 0,
+    },
+    menuBackdrop: {
+      flex: 1,
+    },
+    menuWrap: {
+      position: 'absolute',
+      right: spacing.xl,
+      minWidth: 190,
+    },
+    menu: {
+      paddingVertical: spacing.xs,
+    },
+    menuItem: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
       paddingHorizontal: spacing.md,
-      marginHorizontal: spacing.xl,
-      marginTop: spacing.md,
-      marginBottom: spacing.md,
-      minHeight: 44,
+      paddingVertical: spacing.md,
     },
-    searchInput: {
-      flex: 1,
+    menuItemText: {
       fontSize: 15,
+      fontWeight: '600',
       color: colors.text,
-      paddingVertical: spacing.sm,
-      borderWidth: 0,
-      outlineWidth: 0,
+    },
+    menuItemDanger: {
+      color: colors.danger,
+    },
+    menuDivider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginHorizontal: spacing.sm,
     },
     list: {
       paddingHorizontal: spacing.xl,
@@ -96,17 +133,34 @@ function createStyles(colors: Colors) {
   });
 }
 
+const HEADER_HEIGHT = 64;
+
 export default function FeedScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const tabBarPadding = useTabBarBottomPadding();
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
   const debouncedSearch = useDebouncedValue(search.trim().toLowerCase(), 400);
 
   const feed = useFeed(debouncedSearch);
   const toggleLike = useToggleLike();
+
+  function toggleSearch() {
+    if (searchOpen) {
+      setSearchOpen(false);
+      setSearch('');
+    } else {
+      setMenuOpen(false);
+      setSearchOpen(true);
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+  }
 
   const posts = useMemo(
     () => feed.data?.pages.flatMap((page) => page.posts) ?? [],
@@ -128,47 +182,111 @@ export default function FeedScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenContainer>
         <GlassSurface style={styles.header} radius={0}>
-          <Text style={styles.headerTitle}>Feed</Text>
+          {searchOpen ? (
+            <View style={styles.searchInline}>
+              <Ionicons name="search" size={18} color={colors.textMuted} />
+              <TextInput
+                ref={searchInputRef}
+                style={styles.searchInlineInput}
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search username…"
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {search.length > 0 && (
+                <Pressable
+                  onPress={() => setSearch('')}
+                  hitSlop={8}
+                  android_ripple={{ color: colors.ripple, borderless: true, radius: 18 }}
+                  accessibilityLabel="Clear filter"
+                >
+                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                </Pressable>
+              )}
+            </View>
+          ) : (
+            <Text style={styles.headerTitle}>Feed</Text>
+          )}
+
           <View style={styles.headerRight}>
-            <Text style={styles.headerUser} numberOfLines={1}>
-              @{user?.username}
-            </Text>
             <Pressable
-              onPress={confirmLogout}
+              onPress={toggleSearch}
               hitSlop={8}
               android_ripple={{ color: colors.ripple, borderless: true, radius: 24 }}
               accessibilityRole="button"
-              accessibilityLabel="Log out"
+              accessibilityLabel={searchOpen ? 'Close search' : 'Search by username'}
             >
-              <Ionicons name="log-out-outline" size={24} color={colors.textMuted} />
+              <Ionicons
+                name={searchOpen ? 'close' : 'search'}
+                size={22}
+                color={searchOpen ? colors.primary : colors.textMuted}
+              />
             </Pressable>
+
+            {!searchOpen ? (
+              <Pressable
+                style={styles.userTrigger}
+                onPress={() => setMenuOpen((open) => !open)}
+                hitSlop={8}
+                android_ripple={{ color: colors.ripple, borderless: true }}
+                accessibilityRole="button"
+                accessibilityLabel="Account menu"
+              >
+                <Text style={styles.headerUser} numberOfLines={1}>
+                  @{user?.username}
+                </Text>
+                <Ionicons
+                  name={menuOpen ? 'chevron-up' : 'chevron-down'}
+                  size={14}
+                  color={colors.textMuted}
+                />
+              </Pressable>
+            ) : null}
           </View>
         </GlassSurface>
 
-        <PostComposer />
+        <Modal transparent visible={menuOpen} animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+          <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
+            <View style={[styles.menuWrap, { top: insets.top + HEADER_HEIGHT }]}>
+              <GlassSurface style={styles.menu} radius={radius.md}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setMenuOpen(false);
+                    if (user?.username) {
+                      router.push({
+                        pathname: '/(app)/profile/[username]',
+                        params: { username: user.username },
+                      });
+                    }
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="View profile"
+                >
+                  <Ionicons name="person-outline" size={18} color={colors.text} />
+                  <Text style={styles.menuItemText}>View profile</Text>
+                </Pressable>
+                <View style={styles.menuDivider} />
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setMenuOpen(false);
+                    confirmLogout();
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Log out"
+                >
+                  <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+                  <Text style={[styles.menuItemText, styles.menuItemDanger]}>Log out</Text>
+                </Pressable>
+              </GlassSurface>
+            </View>
+          </Pressable>
+        </Modal>
 
-        <GlassSurface style={styles.searchBox} radius={radius.md}>
-          <Ionicons name="search" size={18} color={colors.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Filter by username…"
-            placeholderTextColor={colors.textMuted}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {search.length > 0 && (
-            <Pressable
-              onPress={() => setSearch('')}
-              hitSlop={8}
-              android_ripple={{ color: colors.ripple, borderless: true, radius: 18 }}
-              accessibilityLabel="Clear filter"
-            >
-              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-            </Pressable>
-          )}
-        </GlassSurface>
+        <PostComposer />
 
         {feed.isLoading ? (
           <SkeletonFeed />
