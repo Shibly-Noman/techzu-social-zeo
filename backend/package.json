@@ -1,7 +1,7 @@
 {
   "name": "mini-social-feed-backend",
   "version": "1.0.0",
-  "description": "REST API for the Mini Social Feed app — Express + TypeScript + MongoDB + FCM",
+  "description": "REST API for the Techzu Social Zeo app — Express + TypeScript + MongoDB + FCM",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

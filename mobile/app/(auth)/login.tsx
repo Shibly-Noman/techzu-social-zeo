@@ -119,7 +119,7 @@ export default function LoginScreen() {
               <View style={styles.logo}>
                 <Ionicons name="chatbubbles" size={34} color={colors.white} />
               </View>
-              <Text style={styles.title}>Mini Social Feed</Text>
+              <Text style={styles.title}>Techzu Social Zeo</Text>
               <Text style={styles.subtitle}>Welcome back — sign in to continue</Text>
             </View>
 

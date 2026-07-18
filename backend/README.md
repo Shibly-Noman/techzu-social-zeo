@@ -1,4 +1,4 @@
-# Mini Social Feed — Backend
+# Techzu Social Zeo — Backend
 
 REST API built with **Node.js, Express 5, TypeScript, MongoDB (Mongoose)**, secured with **JWT**, and integrated with **Firebase Cloud Messaging** for push notifications.
 

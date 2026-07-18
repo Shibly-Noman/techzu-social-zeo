@@ -1,5 +1,5 @@
 /**
- * End-to-end smoke test for the Mini Social Feed API.
+ * End-to-end smoke test for the Techzu Social Zeo API.
  *
  * Usage:
  *   node scripts/smoke.mjs                       # against http://localhost:4000

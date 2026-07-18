@@ -1,4 +1,4 @@
-# Mini Social Feed — Mobile App
+# Techzu Social Zeo — Mobile App
 
 React Native app built with **Expo (SDK 57), TypeScript, expo-router, TanStack Query**, and **expo-notifications** for FCM push.
 

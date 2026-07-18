@@ -110,7 +110,7 @@ export default function WelcomeScreen() {
           </Animated.View>
 
           <Animated.View style={textStyle}>
-            <Text style={styles.title}>Mini Social Feed</Text>
+            <Text style={styles.title}>Techzu Social Zeo</Text>
             <Text style={styles.subtitle}>Share moments. Connect instantly.</Text>
           </Animated.View>
 

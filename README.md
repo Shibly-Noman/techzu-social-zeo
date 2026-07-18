@@ -1,4 +1,4 @@
-# Mini Social Feed App
+# Techzu Social Zeo
 
 A lightweight social media application where users can post text updates, browse a shared feed, like and comment on posts, and receive real-time push notifications (Firebase Cloud Messaging) when their posts get interactions.
 
